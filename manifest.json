@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Cookie Manager",
+  "version": "1.0",
+  "description": "A simple extension to manage cookies",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; style-src 'self'; img-src 'self'; connect-src 'none'"
+  },
+  "permissions": ["cookies", "tabs", "activeTab", "storage", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

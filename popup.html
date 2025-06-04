@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Cookie Manager</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Cookie Manager</h1>
+    
+    <!-- Accordion for adding new cookie form (initially open) -->
+    <div class="accordion active">
+      <div class="accordion-header">
+        <span>Add new cookie</span>
+        <span class="accordion-icon">+</span>
+      </div>
+      <div class="accordion-content">
+        <!-- Form for adding new cookie -->
+        <div class="add-cookie-form">
+          <div class="form-group">
+            <label for="cookieName">Name:</label>
+            <input type="text" id="cookieName" placeholder="Cookie name">
+          </div>
+          <div class="form-group">
+            <label for="cookieValue">Value:</label>
+            <input type="text" id="cookieValue" placeholder="Cookie value">
+          </div>
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="isGlobalCookie" checked>
+            <label for="isGlobalCookie">Global cookie (works on all domains)</label>
+          </div>
+          <div class="form-group">
+            <label for="cookieDomain">Domain (only if not global):</label>
+            <input type="text" id="cookieDomain" placeholder="Global cookie (any domain)" disabled>
+          </div>
+          <div class="form-group">
+            <label for="cookiePath">Path:</label>
+            <input type="text" id="cookiePath" value="/" placeholder="/">
+          </div>
+          <div class="form-group">
+            <label for="cookieExpiration">Expiration (days):</label>
+            <input type="number" id="cookieExpiration" value="30" min="0">
+          </div>
+          <!-- Add validation message area for form -->
+          <div id="form-validation-message" class="validation-message"></div>
+          <button id="addCookieBtn">Add cookie</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- List of saved cookies (initially closed, will be managed by JS) -->
+    <div class="accordion saved-cookies-accordion">
+      <div class="accordion-header">
+        <span>Saved cookies</span>
+        <span class="accordion-icon">+</span>
+      </div>
+      <div class="accordion-content">
+        <div class="saved-cookies-content">
+          <div id="cookiesList" class="cookies-list">
+            <!-- Cookies will be added via JavaScript -->
+            <div class="no-cookies-message">No saved cookies yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="status-message"></div>
+
+    <!-- Bottom fixed section with controls -->
+    <div class="bottom-controls">
+      <div id="currentDomain" class="current-domain">
+        Current domain: loading...
+      </div>
+      
+      <!-- Debug controls -->
+      <div class="debug-controls">
+        <button id="openDevToolsBtn" class="small-btn dev-tools-btn">Site cookies</button>
+      </div>
+    </div>
+  </div>
+  <script src="utils.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html> 

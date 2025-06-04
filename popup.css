@@ -1,0 +1,478 @@
+/* Basic styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  min-width: 400px;
+  min-height: 500px;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.container {
+  padding: 20px 20px 0 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  position: relative;
+  min-height: 450px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+h1 {
+  margin-top: 0;
+  color: #333;
+  font-size: 20px;
+  text-align: center;
+}
+
+h2 {
+  font-size: 16px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 10px;
+}
+
+label {
+  display: block;
+  margin-bottom: 3px;
+  font-weight: bold;
+  color: #555;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[disabled] {
+  background-color: #f8f8f8;
+  color: #888;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-group input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+.checkbox-group label {
+  display: inline;
+  margin-bottom: 0;
+}
+
+button {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #3367d6;
+}
+
+#addCookieBtn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+/* Accordion styles */
+.accordion {
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.accordion-header {
+  background-color: #f0f0f0;
+  padding: 10px 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  color: #333;
+}
+
+.accordion-icon {
+  font-size: 18px;
+  transition: transform 0.3s;
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+  background-color: white;
+  padding: 0 15px; /* Keep horizontal padding even when closed */
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.accordion.active .accordion-content {
+  max-height: 500px;
+  padding: 15px;
+}
+
+.accordion.active .accordion-icon {
+  transform: rotate(45deg);
+}
+
+/* Add a wrapper for form content to control animation better */
+.add-cookie-form {
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+
+/* Cookie list styles */
+.saved-cookies-content {
+  background-color: white;
+  width: 100%;
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+
+.cookies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+/* Style for the saved cookies accordion */
+.saved-cookies-accordion .accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+}
+
+/* Active state for saved cookies accordion */
+.saved-cookies-accordion.active .accordion-content {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 15px;
+  padding-bottom: 70px; /* Extra padding to prevent content from hiding behind footer */
+}
+
+.saved-cookies-accordion.active .accordion-icon {
+  transform: rotate(45deg);
+}
+
+.no-cookies-message {
+  color: #888;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.cookie-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  gap: 8px;
+}
+
+.cookie-info {
+  width: 100%;
+}
+
+.cookie-name {
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.cookie-details {
+  font-size: 12px;
+  color: #666;
+  word-break: break-all;
+}
+
+.cookie-controls {
+  display: flex;
+  gap: 5px;
+}
+
+/* Styles for status message under each cookie item */
+.cookie-status-message {
+  font-size: 12px;
+  padding: 5px;
+  margin-top: 5px;
+  border-radius: 3px;
+  display: none;
+  transition: all 0.3s ease;
+  word-break: break-all;
+}
+
+.cookie-status-message.info {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  border: 1px solid #bbdefb;
+  display: block;
+}
+
+.cookie-status-message.success {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+  display: block;
+}
+
+.cookie-status-message.removed {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  border: 1px solid #bbdefb;
+  display: block;
+}
+
+.cookie-status-message.error {
+  background-color: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #ffcdd2;
+  display: block;
+}
+
+.toggle-btn,
+.check-btn,
+.delete-btn {
+  flex: 1;
+  text-align: center;
+  min-width: unset;
+}
+
+.toggle-btn {
+  background-color: #4caf50;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.toggle-btn:hover {
+  background-color: #45a049;
+}
+
+.check-btn {
+  background-color: #ff9800;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.check-btn:hover {
+  background-color: #e68a00;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+/* Status message styles */
+#status-message {
+  margin-top: 15px;
+  margin-bottom: 35px; /* Space for footer */
+  padding: 10px;
+  border-radius: 4px;
+  text-align: left;
+  display: none;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.4;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+  opacity: 1;
+  z-index: 1;
+}
+
+/* Styles for formatted storage output */
+#status-message.info {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+}
+
+#status-message.info strong {
+  color: #1565C0;
+}
+
+.success {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
+
+.error {
+  background-color: #ffebee;
+  color: #b71c1c;
+}
+
+/* Debug controls */
+.debug-controls {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.small-btn {
+  font-size: 12px;
+  padding: 6px 15px;
+  transition: background-color 0.2s ease;
+  border-radius: 3px;
+}
+
+.small-btn:hover {
+  background-color: #1a73e8;
+}
+
+.dev-tools-btn {
+  background-color: #673ab7;
+  color: white;
+}
+
+.dev-tools-btn:hover {
+  background-color: #5e35b1;
+}
+
+/* Active state for buttons */
+.active-button {
+  background-color: #3367d6;
+  position: relative;
+}
+
+.active-button:after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: #fff;
+  border-radius: 50%;
+}
+
+.cookie-status {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.cookie-status.active {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.cookie-status.inactive {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Style for bottom section with controls */
+.bottom-controls {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  margin-top: auto;
+  background-color: #f5f5f5;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.current-domain {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  text-align: center;
+  font-size: 12px;
+  padding: 8px 0;
+  width: 100%;
+  border-top: 1px solid #bbdefb;
+  border-bottom: 1px solid #bbdefb;
+}
+
+/* Validation message for form */
+.validation-message {
+  font-size: 12px;
+  padding: 5px;
+  margin: 5px 0;
+  border-radius: 3px;
+  display: none;
+  transition: all 0.3s ease;
+  word-break: break-all;
+}
+
+.validation-message.info {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  border: 1px solid #bbdefb;
+  display: block;
+}
+
+.validation-message.success {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+  display: block;
+}
+
+.validation-message.error {
+  background-color: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #ffcdd2;
+  display: block;
+  font-weight: bold;
+  border-left: 4px solid #f44336;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Invalid field highlighting */
+.invalid-field {
+  border: 2px solid #f44336 !important;
+  background-color: rgba(255, 0, 0, 0.03);
+  box-shadow: 0 0 3px rgba(244, 67, 54, 0.5);
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+} 

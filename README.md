@@ -1,34 +1,34 @@
 # Cookie Manager Browser Extension
 
-A simple browser extension that allows you to manage cookies across different websites.
+A Chrome browser extension for managing cookies across websites.
 
 ## Features
 
-- Create and save cookie presets for quick access
-- Set cookies globally (for any domain) or for specific domains
-- Easily toggle cookies on/off for the current site
-- Check if a cookie exists on the current site
+- Add new cookies with custom name, value, domain, path and expiration
+- Global cookies that work across all domains
+- Save cookies for reuse across sessions
+- View and inspect cookies on the current site
+- Toggle cookies on/off with a single click
 - Delete cookies from your saved list
 
-## How to Use
+## Installation
 
-1. **Adding a Cookie**:
+1. Download or clone this repository
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable "Developer mode" in the top right corner
+4. Click "Load unpacked" and select the extension directory
+5. The Cookie Manager extension is now installed and ready to use
 
-   - Click on "Add new cookie" to expand the form
-   - Fill in the cookie details (name, value, etc.)
-   - Choose whether it should be a global cookie (works on any domain) or domain-specific
-   - Click "Add cookie" to save it to your list
+## Usage
 
-2. **Managing Cookies**:
+1. Click on the extension icon in your browser toolbar
+2. Use the "Add new cookie" form to create new cookies
+3. View and manage your saved cookies in the "Saved cookies" section
+4. Click the "Site cookies" button to view cookies on the current site
 
-   - Your saved cookies appear in the list below
-   - Use the "Toggle" button to add/remove a cookie on the current site
-   - Use the "Check" button to see if the cookie exists on the current site
-   - Use the "✕" button to remove a cookie from your saved list
+## Development
 
-3. **Global vs. Domain-specific Cookies**:
-   - Global cookies will work on any domain
-   - Domain-specific cookies will only be applied to matching domains
+This extension uses vanilla JavaScript, HTML and CSS. No build steps or dependencies required.
 
 ## Technical Details
 

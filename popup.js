@@ -1583,12 +1583,38 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Function to clear all site data (cookies + storage)
   function clearAllSiteData(domain, url) {
+    // Check if URL is a restricted chrome:// or extension:// URL
+    if (
+      url &&
+      (url.startsWith("chrome://") ||
+        url.startsWith("chrome-extension://") ||
+        url.startsWith("moz-extension://"))
+    ) {
+      showStatus(
+        "Cannot clear data on restricted pages (chrome:// URLs)",
+        "error"
+      );
+      return;
+    }
+
     showStatus("Clearing all site data...", "info");
 
     // First manually clear storage through script injection (most reliable)
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (!tabs[0]) {
         showStatus("No active tab found", "error");
+        return;
+      }
+
+      // Additional URL check from tab
+      const tabUrl = tabs[0].url;
+      if (
+        tabUrl &&
+        (tabUrl.startsWith("chrome://") ||
+          tabUrl.startsWith("chrome-extension://") ||
+          tabUrl.startsWith("moz-extension://"))
+      ) {
+        showStatus("Cannot clear data on restricted pages", "error");
         return;
       }
 
@@ -1658,7 +1684,6 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                 },
                 {
                   localStorage: true,
-                  sessionStorage: true,
                   indexedDB: true,
                   webSQL: true,
                   cacheStorage: true,
@@ -1708,6 +1733,17 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       }
 
       const currentUrl = tabs[0].url;
+
+      // Check if URL is restricted
+      if (
+        currentUrl &&
+        (currentUrl.startsWith("chrome://") ||
+          currentUrl.startsWith("chrome-extension://") ||
+          currentUrl.startsWith("moz-extension://"))
+      ) {
+        showStatus("Cannot clear cookies on restricted pages", "error");
+        return;
+      }
 
       // Get cookies for current URL (this gets ALL cookies accessible to this page, including third-party)
       chrome.cookies.getAll({ url: currentUrl }, function (siteCookies) {

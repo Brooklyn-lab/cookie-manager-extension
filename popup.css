@@ -243,9 +243,9 @@ button:hover {
 }
 
 .cookie-status-message.removed {
-  background-color: #e3f2fd;
-  color: #0d47a1;
-  border: 1px solid #bbdefb;
+  background-color: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #ffcdd2;
   display: block;
 }
 
@@ -475,4 +475,46 @@ button:hover {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
   20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Site cookies info styles */
+.site-cookies-container {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.site-cookies-header {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.site-cookies-count {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.site-cookies-none {
+  color: #666;
+  margin-top: 10px;
+}
+
+.site-cookie-item {
+  margin: 5px 0;
+  padding: 5px;
+  border-left: 3px solid #9e9e9e;
+}
+
+.site-cookie-header {
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.site-cookie-value,
+.site-cookie-domain,
+.site-cookie-path,
+.site-cookie-expires,
+.site-cookie-flags {
+  margin-bottom: 3px;
+  word-break: break-all;
 } 

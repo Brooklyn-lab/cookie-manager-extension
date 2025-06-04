@@ -1,5 +1,5 @@
-// This file is for any background functionality
-// Currently we're not using any specific background functions
+// This file is for background functionality
+// It handles auto-applying cookies and extension installation events
 
 console.log("Cookie Manager background script loaded");
 

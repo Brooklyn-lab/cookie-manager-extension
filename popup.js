@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
     savedCookiesAccordion.querySelector(".accordion-header");
   const currentDomainElement = document.getElementById("currentDomain");
 
-  // Debug button handlers
+  // Site cookies button handler
   const openDevToolsBtn = document.getElementById("openDevToolsBtn");
 
   // Timer for automatically hiding messages
@@ -30,8 +30,24 @@ document.addEventListener("DOMContentLoaded", function () {
   // Track if add cookie form was just used
   let isAddCookieJustUsed = false;
 
+  // Function to clear status message area
+  function clearStatusMessage() {
+    statusMessage.innerHTML = "";
+    statusMessage.className = "";
+    statusMessage.style.display = "none";
+
+    // Clear timer if it exists
+    if (hideStatusTimer) {
+      clearTimeout(hideStatusTimer);
+      hideStatusTimer = null;
+    }
+  }
+
   // Add accordion functionality for "Add new cookie"
   accordionHeader.addEventListener("click", function () {
+    // Clear status message area when opening/closing accordion
+    clearStatusMessage();
+
     // Get the content element
     const content = accordion.querySelector(".accordion-content");
     const isActive = accordion.classList.contains("active");
@@ -61,6 +77,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Add accordion functionality for "Saved cookies"
   savedCookiesHeader.addEventListener("click", function () {
+    // Clear status message area when opening/closing accordion
+    clearStatusMessage();
+
     // Get the content element
     const content = savedCookiesAccordion.querySelector(".accordion-content");
     const isActive = savedCookiesAccordion.classList.contains("active");
@@ -398,10 +417,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (savedCookies.length === 0) {
-        safeRenderHTML(
-          cookiesList,
-          `<div class="no-cookies-message">No saved cookies yet</div>`
-        );
+        const noCookiesElement = document.createElement("div");
+        noCookiesElement.className = "no-cookies-message";
+        noCookiesElement.textContent = "No saved cookies yet";
+        cookiesList.appendChild(noCookiesElement);
 
         // If no cookies, close the saved cookies accordion and open the add form
         if (savedCookiesAccordion.classList.contains("active")) {
@@ -1247,8 +1266,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Handler for opening Site cookies
+  // Handler for opening DevTools
   openDevToolsBtn.addEventListener("click", function () {
+    // Check if cookie info is already visible
+    if (
+      statusMessage.style.display === "block" &&
+      statusMessage.querySelector(".site-cookies-container")
+    ) {
+      // If visible - hide it
+      clearStatusMessage();
+      return;
+    }
+
     // Close all accordions
     closeAllAccordions();
 
@@ -1262,37 +1291,24 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      // Show cookies info directly in extension popup
+      // Skip DevTools opening attempt, which causes issues
       try {
         const urlObj = new URL(tabs[0].url);
         const domain = urlObj.hostname;
-
-        // Відкриваємо cookies для поточного сайту
-        chrome.tabs.create(
-          {
-            url: `chrome://settings/cookies/detail?site=${domain}`,
-            active: true,
-          },
-          function (newTab) {
-            if (chrome.runtime.lastError) {
-              showStatus(`Error: ${chrome.runtime.lastError.message}`, "error");
-
-              // Спробуємо показати вбудовану інформацію про куки
-              showSiteCookiesInfo(domain);
-            }
-          }
-        );
+        showSiteCookiesInfo(domain);
       } catch (e) {
         showStatus(`Error: ${e.message}`, "error");
       }
     });
   });
 
-  // Функція для показу інформації про куки в самому розширенні
+  // Function to display information about cookies in the extension popup
   function showSiteCookiesInfo(domain) {
-    // Показуємо повідомлення про завантаження
+    // Show loading message
     showStatus("Loading cookies...", "info");
 
-    // Отримуємо всі куки
+    // Get all cookies
     chrome.cookies.getAll({}, function (allCookies) {
       if (chrome.runtime.lastError) {
         showStatus(
@@ -1302,12 +1318,12 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // Фільтруємо куки для поточного домену
+      // Filter cookies for the current domain
       const siteCookies = allCookies.filter((cookie) => {
-        // Точне співпадіння домену
+        // Exact domain match
         if (cookie.domain === domain) return true;
 
-        // Перевіряємо, чи є домен субдоменом cookie.domain (для .example.com кук)
+        // Check if domain is a subdomain of cookie.domain (for .example.com cookies)
         if (
           cookie.domain.startsWith(".") &&
           domain.endsWith(cookie.domain.substring(1))
@@ -1317,39 +1333,77 @@ document.addEventListener("DOMContentLoaded", function () {
         return false;
       });
 
-      // Форматуємо куки для відображення
-      let htmlContent = `<strong>Site cookies for ${domain}</strong><br>`;
-      htmlContent += `<strong>Total cookies found: ${siteCookies.length}</strong><br><br>`;
+      // Create HTML elements for cookie display
+      const cookiesContainer = document.createElement("div");
+      cookiesContainer.className = "site-cookies-container";
+
+      const headerElement = document.createElement("div");
+      headerElement.className = "site-cookies-header";
+      headerElement.textContent = `Site cookies for ${domain}`;
+      cookiesContainer.appendChild(headerElement);
+
+      const countElement = document.createElement("div");
+      countElement.className = "site-cookies-count";
+      countElement.textContent = `Total cookies found: ${siteCookies.length}`;
+      cookiesContainer.appendChild(countElement);
 
       if (siteCookies.length === 0) {
-        htmlContent += "No cookies found for this site.<br>";
+        const noCookiesElement = document.createElement("div");
+        noCookiesElement.className = "site-cookies-none";
+        noCookiesElement.textContent = "No cookies found for this site.";
+        cookiesContainer.appendChild(noCookiesElement);
       } else {
-        // Сортуємо куки за іменем
+        // Sort cookies alphabetically by name
         siteCookies.sort((a, b) => a.name.localeCompare(b.name));
 
         siteCookies.forEach((cookie, index) => {
-          htmlContent += `<div style="margin: 5px 0; padding: 5px; border-left: 3px solid #9e9e9e;">`;
-          htmlContent += `<strong>${index + 1}. ${cookie.name}</strong><br>`;
-          htmlContent += `Value: ${formatCookieValue(cookie.value)}<br>`;
-          htmlContent += `Domain: ${cookie.domain || domain}<br>`;
-          htmlContent += `Path: ${cookie.path || "/"}<br>`;
+          const cookieElement = document.createElement("div");
+          cookieElement.className = "site-cookie-item";
 
+          const cookieHeader = document.createElement("div");
+          cookieHeader.className = "site-cookie-header";
+          cookieHeader.textContent = `${index + 1}. ${cookie.name}`;
+          cookieElement.appendChild(cookieHeader);
+
+          const cookieValue = document.createElement("div");
+          cookieValue.className = "site-cookie-value";
+          cookieValue.textContent = `Value: ${formatCookieValue(cookie.value)}`;
+          cookieElement.appendChild(cookieValue);
+
+          const cookieDomain = document.createElement("div");
+          cookieDomain.className = "site-cookie-domain";
+          cookieDomain.textContent = `Domain: ${cookie.domain || domain}`;
+          cookieElement.appendChild(cookieDomain);
+
+          const cookiePath = document.createElement("div");
+          cookiePath.className = "site-cookie-path";
+          cookiePath.textContent = `Path: ${cookie.path || "/"}`;
+          cookieElement.appendChild(cookiePath);
+
+          const cookieExpires = document.createElement("div");
+          cookieExpires.className = "site-cookie-expires";
           if (cookie.expirationDate) {
             const expiryDate = new Date(cookie.expirationDate * 1000);
-            htmlContent += `Expires: ${expiryDate.toLocaleString()}<br>`;
+            cookieExpires.textContent = `Expires: ${expiryDate.toLocaleString()}`;
           } else {
-            htmlContent += `Expires: Session cookie<br>`;
+            cookieExpires.textContent = `Expires: Session cookie`;
           }
+          cookieElement.appendChild(cookieExpires);
 
-          htmlContent += `Secure: ${cookie.secure ? "Yes" : "No"} | HttpOnly: ${
-            cookie.httpOnly ? "Yes" : "No"
-          }<br>`;
-          htmlContent += `</div>`;
+          const cookieFlags = document.createElement("div");
+          cookieFlags.className = "site-cookie-flags";
+          cookieFlags.textContent = `Secure: ${
+            cookie.secure ? "Yes" : "No"
+          } | HttpOnly: ${cookie.httpOnly ? "Yes" : "No"}`;
+          cookieElement.appendChild(cookieFlags);
+
+          cookiesContainer.appendChild(cookieElement);
         });
       }
 
-      // Безпечне відображення HTML
-      safeRenderHTML(statusMessage, htmlContent);
+      // Clear previous content and append the new container
+      statusMessage.innerHTML = "";
+      statusMessage.appendChild(cookiesContainer);
       statusMessage.className = "info";
       statusMessage.style.display = "block";
     });
@@ -1386,10 +1440,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Update message
     if (type === "info" && message.includes("Site cookies for")) {
-      // For site cookies info, use safeRenderHTML to render formatted HTML content
-      safeRenderHTML(statusMessage, message);
+      // For site cookies info, handle it separately - don't try to display here
+      console.log(
+        "Site cookies info being displayed via showSiteCookiesInfo()"
+      );
+      return;
     } else if (message.includes("Current domain:")) {
-      // Для повідомлень про домен просто пропускаємо відображення
       console.log(`Domain message: ${message}`);
       return; // Don't show in status message area
     } else {
@@ -1428,6 +1484,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Function to close all accordions
   function closeAllAccordions() {
+    // Clear status message when closing accordions
+    clearStatusMessage();
+
     // Close the Add new cookie accordion if it's open
     if (accordion.classList.contains("active")) {
       const content = accordion.querySelector(".accordion-content");
@@ -1497,37 +1556,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Function to clear all status messages, including messages under cookie items
-  function clearAllStatusMessages() {
-    // Clear global message
-    statusMessage.textContent = "";
-    statusMessage.style.display = "none";
-
-    // Clear global message timer
-    if (hideStatusTimer) {
-      clearTimeout(hideStatusTimer);
-      hideStatusTimer = null;
-    }
-
-    // Clear form validation message
-    clearFormValidation();
-
-    // Clear statuses under cookies
-    const cookieStatusElements = document.querySelectorAll(
-      ".cookie-status-message"
-    );
-    cookieStatusElements.forEach((statusElement) => {
-      statusElement.className = "cookie-status-message";
-      statusElement.textContent = "";
-
-      // Clear timer if exists
-      if (statusElement.hideTimer) {
-        clearTimeout(statusElement.hideTimer);
-        statusElement.hideTimer = null;
-      }
-    });
-  }
-
   // Function to highlight invalid form field
   function highlightInvalidField(fieldElement, isInvalid) {
     if (isInvalid) {
@@ -1579,6 +1607,13 @@ document.addEventListener("DOMContentLoaded", function () {
     clearFieldHighlights();
   }
 
+  // Helper function to format cookie value (truncate if too long)
+  function formatCookieValue(value) {
+    if (!value) return "";
+    if (value.length <= 50) return value;
+    return value.substring(0, 50) + "...";
+  }
+
   // Add input event handlers to clear invalid state when user starts typing
   cookieNameInput.addEventListener("input", function () {
     highlightInvalidField(this, false);
@@ -1602,7 +1637,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Function to update current domain display
   function updateCurrentDomain() {
-    // Get current tab URL to determine default domain
+    // Get current tab URL to determine domain
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (tabs[0] && tabs[0].url) {
         try {

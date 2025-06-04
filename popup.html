@@ -65,6 +65,18 @@
       </div>
     </div>
 
+    <!-- Cookie search section -->
+    <div class="cookie-search-section">
+      <div class="form-group">
+        <label for="cookieSearchInput">Search cookie on current site:</label>
+        <div class="search-input-container">
+          <input type="text" id="cookieSearchInput" placeholder="Enter cookie name to search...">
+          <button id="searchCookieBtn" class="search-btn">Search</button>
+        </div>
+      </div>
+      <div id="search-result" class="search-result"></div>
+    </div>
+
     <div id="status-message"></div>
 
     <!-- Bottom fixed section with controls -->
@@ -76,6 +88,8 @@
       <!-- Debug controls -->
       <div class="debug-controls">
         <button id="openDevToolsBtn" class="small-btn dev-tools-btn">Site cookies</button>
+        <button id="clearAllCookiesBtn" class="small-btn clear-cookies-btn">Clear cookies</button>
+        <button id="clearAllDataBtn" class="small-btn clear-data-btn">Clear all data</button>
       </div>
     </div>
   </div>

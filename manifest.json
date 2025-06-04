@@ -14,7 +14,14 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; style-src 'self'; img-src 'self'; connect-src 'none'"
   },
-  "permissions": ["cookies", "tabs", "activeTab", "storage", "scripting"],
+  "permissions": [
+    "cookies",
+    "tabs",
+    "activeTab",
+    "storage",
+    "scripting",
+    "browsingData"
+  ],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"

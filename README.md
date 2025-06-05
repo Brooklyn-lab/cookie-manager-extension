@@ -18,8 +18,10 @@ A powerful Chrome extension for managing cookies and site data.
 
 - **View current site cookies** with detailed information
 - **Copy cookie names and values** from site cookies with one click
+- **Delete individual cookies** directly from site cookies list
 - **Search for specific cookies** on the current site
 - **Copy found cookies** from search results
+- **Delete cookies** from search results
 
 ### 🧹 Data Clearing
 
@@ -36,9 +38,10 @@ A powerful Chrome extension for managing cookies and site data.
 
 ### 💬 Convenient Messaging
 
-- **Local messages** under each cookie block
-- **Animated notifications** for successful copying
-- **Status indicators** for all operations
+- **Toast notifications** at the bottom of extension
+- **Color-coded messages** (green for success, red for errors, blue for info)
+- **Animated notifications** for all operations
+- **Status indicators** for cookie management actions
 
 ## Installation
 
@@ -60,9 +63,10 @@ A powerful Chrome extension for managing cookies and site data.
 ### Working with Sites
 
 1. **View site cookies**: click "Site cookies" for detailed information
-2. **Search cookies**: use the search field under saved cookies
-3. **Copy data**: click on cookie names and values to copy them
-4. **Clear data**: use "Clear all cookies" or "Clear all data"
+2. **Delete individual cookies**: use trash icon next to each cookie
+3. **Search cookies**: use the search field under saved cookies
+4. **Copy data**: click on cookie names and values to copy them
+5. **Clear data**: use "Clear all cookies" or "Clear all data"
 
 ### Copying Data
 

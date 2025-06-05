@@ -24,7 +24,7 @@
           </div>
           <div class="form-group">
             <label for="cookieValue">Value:</label>
-            <input type="text" id="cookieValue" placeholder="Cookie value">
+            <textarea id="cookieValue" placeholder="Cookie value" rows="3"></textarea>
           </div>
           <div class="form-group checkbox-group">
             <input type="checkbox" id="isGlobalCookie" checked>
@@ -44,7 +44,7 @@
           </div>
           <!-- Add validation message area for form -->
           <div id="form-validation-message" class="validation-message"></div>
-          <button id="addCookieBtn">Add cookie</button>
+          <button id="addCookieBtn" title="Save this cookie to your list">Add cookie</button>
         </div>
       </div>
     </div>
@@ -71,7 +71,7 @@
         <label for="cookieSearchInput">Search cookie on current site:</label>
         <div class="search-input-container">
           <input type="text" id="cookieSearchInput" placeholder="Enter cookie name to search...">
-          <button id="searchCookieBtn" class="search-btn">Search</button>
+          <button id="searchCookieBtn" class="search-btn" title="Search for this cookie on current site">Search</button>
         </div>
       </div>
       <div id="search-result" class="search-result"></div>
@@ -87,12 +87,16 @@
       
       <!-- Debug controls -->
       <div class="debug-controls">
-        <button id="openDevToolsBtn" class="small-btn dev-tools-btn">Site cookies</button>
-        <button id="clearAllCookiesBtn" class="small-btn clear-cookies-btn">Clear cookies</button>
-        <button id="clearAllDataBtn" class="small-btn clear-data-btn">Clear all data</button>
+        <button id="openDevToolsBtn" class="small-btn dev-tools-btn" title="View all cookies for current site">Site cookies</button>
+        <button id="clearAllCookiesBtn" class="small-btn clear-cookies-btn" title="Delete all cookies for current site">Clear cookies</button>
+        <button id="clearAllDataBtn" class="small-btn clear-data-btn" title="Delete all cookies and storage data for current site">Clear all data</button>
       </div>
     </div>
   </div>
+  
+  <!-- Toast notifications container -->
+  <div id="toast-container" class="toast-container"></div>
+  
   <script src="utils.js"></script>
   <script src="popup.js"></script>
 </body>

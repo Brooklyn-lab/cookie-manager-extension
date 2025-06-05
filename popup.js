@@ -519,16 +519,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Different text for global and regular cookies
     if (decryptedCookie.isGlobal) {
-      cookieDetails.textContent = `Global | Value: ${decryptedCookie.value.substring(
+      cookieDetails.innerHTML = `Global | Value: <span class="clickable-value" title="Click to copy value">${decryptedCookie.value.substring(
         0,
         15
-      )}${decryptedCookie.value.length > 15 ? "..." : ""}`;
+      )}${decryptedCookie.value.length > 15 ? "..." : ""}</span>`;
     } else {
-      cookieDetails.textContent = `${
+      cookieDetails.innerHTML = `${
         decryptedCookie.domain
-      } | Value: ${decryptedCookie.value.substring(0, 15)}${
-        decryptedCookie.value.length > 15 ? "..." : ""
-      }`;
+      } | Value: <span class="clickable-value" title="Click to copy value">${decryptedCookie.value.substring(
+        0,
+        15
+      )}${decryptedCookie.value.length > 15 ? "..." : ""}</span>`;
+    }
+
+    // Add event listener for value clicking
+    const valueSpan = cookieDetails.querySelector(".clickable-value");
+    if (valueSpan) {
+      valueSpan.addEventListener("click", function () {
+        copyCookieValueToClipboard(decryptedCookie.value);
+      });
     }
 
     cookieInfo.appendChild(cookieName);
@@ -607,9 +616,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Create a temporary textarea
     const textArea = document.createElement("textarea");
     textArea.value = cookieName;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    textArea.style.top = "-999999px";
+    textArea.className = "hidden-textarea";
     document.body.appendChild(textArea);
 
     try {
@@ -692,9 +699,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     // Create a temporary textarea
     const textArea = document.createElement("textarea");
     textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    textArea.style.top = "-999999px";
+    textArea.className = "hidden-textarea";
     document.body.appendChild(textArea);
 
     try {
@@ -845,7 +850,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
               );
               showToast(
                 `Cookie "${cookie.name}" not found on current site`,
-                "info"
+                "error"
               );
             }
           }
@@ -896,12 +901,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
           function (tabs) {
             if (!tabs[0] || !tabs[0].url) {
               debugLog("No active tab to check cookie", "error");
-              showCookieStatus(
-                cookieId,
-                "No active tab to check cookie",
-                "error",
-                cookieItem
-              );
+              showToast("No active tab to check cookie", "error");
               return;
             }
 
@@ -933,11 +933,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
                 if (!domainMatches) {
                   // If the cookie is domain-specific and current domain doesn't match
-                  showCookieStatus(
-                    cookieId,
+                  showToast(
                     `Cookie "${decryptedCookie.name}" is specific to ${decryptedCookie.domain} domain. Current domain (${domain}) doesn't match.`,
-                    "error",
-                    cookieItem
+                    "error"
                   );
                   return;
                 }
@@ -987,11 +985,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                           `Error checking cookie: ${chrome.runtime.lastError.message}`,
                           "error"
                         );
-                        showCookieStatus(
-                          cookieId,
+                        showToast(
                           `Error checking cookie: ${chrome.runtime.lastError.message}`,
-                          "error",
-                          cookieItem
+                          "error"
                         );
                         return;
                       }
@@ -1035,21 +1031,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                 .catch((error) => {
                   // User cancelled or other error
                   debugLog(`Cookie toggle cancelled: ${error.message}`, "info");
-                  showCookieStatus(
-                    cookieId,
-                    `Operation cancelled: ${error.message}`,
-                    "error",
-                    cookieItem
-                  );
+                  showToast(`Operation cancelled: ${error.message}`, "error");
                 });
             } catch (e) {
               debugLog(`Error processing URL: ${e.message}`, "error");
-              showCookieStatus(
-                cookieId,
-                `Error: ${e.message}`,
-                "error",
-                cookieItem
-              );
+              showToast(`Error: ${e.message}`, "error");
             }
           }
         );
@@ -1488,7 +1474,19 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   document
     .getElementById("search-result")
     .addEventListener("click", function (event) {
-      if (event.target.classList.contains("clickable-value")) {
+      if (event.target.classList.contains("clickable-name")) {
+        const cookieName = event.target.getAttribute("data-cookie-name");
+        if (cookieName) {
+          navigator.clipboard
+            .writeText(cookieName)
+            .then(() => {
+              showToast("✓ Cookie name copied!", "success");
+            })
+            .catch(() => {
+              showToast("❌ Failed to copy cookie name", "error");
+            });
+        }
+      } else if (event.target.classList.contains("clickable-value")) {
         const fullValue = event.target.getAttribute("data-full-value");
         if (fullValue) {
           copyCookieValueToClipboard(fullValue);
@@ -1866,71 +1864,75 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
         siteCookies.forEach((cookie, index) => {
           const cookieElement = document.createElement("div");
-          cookieElement.className = "site-cookie-item";
-
-          const cookieHeaderContainer = document.createElement("div");
-          cookieHeaderContainer.className = "site-cookie-header-container";
+          cookieElement.className = "site-cookie-item search-result-item";
 
           const cookieHeader = document.createElement("div");
-          cookieHeader.className = "site-cookie-header";
-          cookieHeader.innerHTML = `${
-            index + 1
-          }. <span class="clickable-site-cookie-name" data-cookie-name="${cookie.name.replace(
-            /"/g,
-            "&quot;"
-          )}" title="Click to copy cookie name">${breakLongString(
+          cookieHeader.className = "search-cookie-header";
+
+          const nameValueDiv = document.createElement("div");
+          nameValueDiv.className = "search-name-value";
+          nameValueDiv.innerHTML = `
+            <strong>Name:</strong> <span class="clickable-site-cookie-name" data-cookie-name="${cookie.name.replace(
+              /"/g,
+              "&quot;"
+            )}" title="Click to copy cookie name">${breakLongString(
             cookie.name
-          )}</span>`;
+          )}</span><br>
+            <strong>Value:</strong> <span class="clickable-site-cookie-value" data-cookie-value="${cookie.value.replace(
+              /"/g,
+              "&quot;"
+            )}" title="Click to copy cookie value">${breakLongString(
+            formatCookieValue(cookie.value)
+          )}</span>
+          `;
 
           // Create delete button
           const deleteBtn = document.createElement("button");
           deleteBtn.className = "site-cookie-delete-btn";
-          deleteBtn.innerHTML = '<div class="trash-icon"></div>';
+          deleteBtn.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="#dc3545"><path d="M5 7v19c0 1.326.527 2.598 1.464 3.536A5.004 5.004 0 0 0 10 31h12a5.004 5.004 0 0 0 3.536-1.464A5.004 5.004 0 0 0 27 26V7h3a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h3Zm20 0v19c0 .796-.316 1.559-.879 2.121A2.996 2.996 0 0 1 22 29H10a2.996 2.996 0 0 1-2.121-.879A2.996 2.996 0 0 1 7 26V7h18ZM11 3h10a1 1 0 0 0 0-2H11a1 1 0 0 0 0 2Z"/><path d="M12 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0ZM18 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0Z"/></svg>';
           deleteBtn.title = "Delete this cookie";
           deleteBtn.setAttribute("data-cookie-name", cookie.name);
           deleteBtn.setAttribute("data-cookie-domain", cookie.domain);
           deleteBtn.setAttribute("data-cookie-path", cookie.path || "/");
 
-          cookieHeaderContainer.appendChild(cookieHeader);
-          cookieHeaderContainer.appendChild(deleteBtn);
-          cookieElement.appendChild(cookieHeaderContainer);
+          cookieHeader.appendChild(nameValueDiv);
+          cookieHeader.appendChild(deleteBtn);
+          cookieElement.appendChild(cookieHeader);
 
-          const cookieValue = document.createElement("div");
-          cookieValue.className = "site-cookie-value";
-          cookieValue.innerHTML = `Value: <span class="clickable-site-cookie-value" data-cookie-value="${cookie.value.replace(
-            /"/g,
-            "&quot;"
-          )}" title="Click to copy cookie value">${breakLongString(
-            formatCookieValue(cookie.value)
-          )}</span>`;
-          cookieElement.appendChild(cookieValue);
+          const cookieDetailsDiv = document.createElement("div");
+          cookieDetailsDiv.className = "cookie-details-search";
 
           const cookieDomain = document.createElement("div");
           cookieDomain.className = "site-cookie-domain";
-          cookieDomain.textContent = `Domain: ${cookie.domain || domain}`;
-          cookieElement.appendChild(cookieDomain);
+          cookieDomain.innerHTML = `<strong>Domain:</strong> ${
+            cookie.domain || domain
+          }`;
+          cookieDetailsDiv.appendChild(cookieDomain);
 
           const cookiePath = document.createElement("div");
           cookiePath.className = "site-cookie-path";
-          cookiePath.textContent = `Path: ${cookie.path || "/"}`;
-          cookieElement.appendChild(cookiePath);
+          cookiePath.innerHTML = `<strong>Path:</strong> ${cookie.path || "/"}`;
+          cookieDetailsDiv.appendChild(cookiePath);
 
           const cookieExpires = document.createElement("div");
           cookieExpires.className = "site-cookie-expires";
           if (cookie.expirationDate) {
             const expiryDate = new Date(cookie.expirationDate * 1000);
-            cookieExpires.textContent = `Expires: ${expiryDate.toLocaleString()}`;
+            cookieExpires.innerHTML = `<strong>Expires:</strong> ${expiryDate.toLocaleString()}`;
           } else {
-            cookieExpires.textContent = `Expires: Session cookie`;
+            cookieExpires.innerHTML = `<strong>Expires:</strong> Session cookie`;
           }
-          cookieElement.appendChild(cookieExpires);
+          cookieDetailsDiv.appendChild(cookieExpires);
 
           const cookieFlags = document.createElement("div");
           cookieFlags.className = "site-cookie-flags";
-          cookieFlags.textContent = `Secure: ${
+          cookieFlags.innerHTML = `<strong>Secure:</strong> ${
             cookie.secure ? "Yes" : "No"
-          } | HttpOnly: ${cookie.httpOnly ? "Yes" : "No"}`;
-          cookieElement.appendChild(cookieFlags);
+          } | <strong>HttpOnly:</strong> ${cookie.httpOnly ? "Yes" : "No"}`;
+          cookieDetailsDiv.appendChild(cookieFlags);
+
+          cookieElement.appendChild(cookieDetailsDiv);
 
           cookiesContainer.appendChild(cookieElement);
         });
@@ -2234,50 +2236,6 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     }
   }
 
-  // Function to display status messages under the specific cookie
-  function showCookieStatus(cookieId, message, type, cookieItem) {
-    // If cookieItem is provided, use it directly
-    let statusElement;
-
-    if (cookieItem) {
-      statusElement = cookieItem.querySelector(".cookie-status-message");
-    } else {
-      // Otherwise, find it by ID
-      statusElement = document.getElementById(`status-${cookieId}`);
-    }
-
-    if (!statusElement) {
-      // If status element not found, log error to console but don't show global message
-      console.error(`Status element for cookie ID ${cookieId} not found`);
-      return;
-    }
-
-    // Remove any existing classes
-    statusElement.className = "cookie-status-message";
-
-    // Add the new class based on type
-    statusElement.classList.add(type);
-
-    // Set message
-    statusElement.textContent = message;
-
-    // Automatically hide all messages after 3 seconds
-    // For 'info' type messages (site cookies)
-    // don't hide automatically
-    if (message.indexOf("Site cookies for") === -1) {
-      // Clear previous timers if they exist
-      if (statusElement.hideTimer) {
-        clearTimeout(statusElement.hideTimer);
-      }
-
-      // Set new timer (3 seconds)
-      statusElement.hideTimer = setTimeout(() => {
-        statusElement.className = "cookie-status-message";
-        statusElement.hideTimer = null;
-      }, 3000);
-    }
-  }
-
   // Function to highlight invalid form field
   function highlightInvalidField(fieldElement, isInvalid) {
     if (isInvalid) {
@@ -2400,21 +2358,19 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
     // Show searching status
     showSearchResult(
-      `Searching for cookie "${breakLongString(
+      `Searching for cookies containing "${breakLongString(
         cookieName
       )}" on current site...`,
       "searching"
     );
 
-    // Validate cookie name
-    const nameValidation = validateCookieName(cookieName);
-    if (!nameValidation.valid) {
-      showSearchResult(
-        `Invalid cookie name: ${nameValidation.message}`,
-        "error"
-      );
+    // Validate that search term is not empty
+    if (!cookieName || cookieName.trim() === "") {
+      showSearchResult("Please enter a cookie name to search", "error");
       return;
     }
+
+    const searchTerm = cookieName.toLowerCase().trim();
 
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (!tabs[0] || !tabs[0].url) {
@@ -2427,7 +2383,10 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         const domain = urlObj.hostname;
         const url = tabs[0].url;
 
-        debugLog(`Searching for cookie "${cookieName}" on ${domain}`, "info");
+        debugLog(
+          `Searching for cookies containing "${cookieName}" on ${domain}`,
+          "info"
+        );
 
         // Search using chrome.cookies API with timeout protection
         let searchCompleted = false;
@@ -2443,12 +2402,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
           }
         }, 5000);
 
-        chrome.cookies.get(
+        chrome.cookies.getAll(
           {
             url: url,
-            name: cookieName,
           },
-          function (cookie) {
+          function (cookies) {
             searchCompleted = true;
             clearTimeout(searchTimeout);
 
@@ -2464,44 +2422,68 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
               return;
             }
 
-            if (cookie) {
-              // Cookie found
+            // Filter cookies that contain the search term
+            const matchingCookies = cookies.filter((cookie) =>
+              cookie.name.toLowerCase().includes(searchTerm)
+            );
+
+            if (matchingCookies.length > 0) {
+              // Cookies found
               debugLog(
-                `Cookie found: ${cookie.name} on ${cookie.domain}`,
+                `${matchingCookies.length} cookie(s) found containing "${cookieName}"`,
                 "info"
               );
-              const cookieInfo = `
-                <div class="search-cookie-header">
-                  <strong>Cookie found:</strong>
-                  <button class="search-cookie-delete-btn" data-cookie-name="${cookie.name.replace(
-                    /"/g,
-                    "&quot;"
-                  )}" data-cookie-domain="${cookie.domain}" data-cookie-path="${
-                cookie.path
-              }" title="Delete this cookie"><div class="trash-icon"></div></button>
-                </div>
-                <strong>${breakLongString(cookie.name)}</strong>
-                <div class="cookie-details-search">
-                  <strong>Name:</strong> ${breakLongString(cookie.name)}<br>
-                  <strong>Value:</strong> <span class="clickable-value" data-full-value="${cookie.value.replace(
-                    /"/g,
-                    "&quot;"
-                  )}" title="Click to copy value">${
-                cookie.value.length > 50
-                  ? breakLongString(cookie.value.substring(0, 50)) + "..."
-                  : breakLongString(cookie.value)
-              }</span><br>
-                  <strong>Domain:</strong> ${cookie.domain}<br>
-                  <strong>Path:</strong> ${cookie.path}<br>
-                  <strong>Secure:</strong> ${cookie.secure ? "Yes" : "No"}<br>
-                  <strong>HttpOnly:</strong> ${cookie.httpOnly ? "Yes" : "No"}
-                </div>
-              `;
-              showSearchResult(cookieInfo, "found");
+
+              let cookiesInfo = `<div class="search-cookie-header"><strong>Found ${matchingCookies.length} cookie(s):</strong></div>`;
+
+              matchingCookies.forEach((cookie, index) => {
+                cookiesInfo += `
+                  <div class="search-result-item">
+                    <div class="search-cookie-header">
+                      <div class="search-name-value">
+                        <strong>Name:</strong> <span class="clickable-name" data-cookie-name="${cookie.name.replace(
+                          /"/g,
+                          "&quot;"
+                        )}" title="Click to copy name">${breakLongString(
+                  cookie.name
+                )}</span><br>
+                        <strong>Value:</strong> <span class="clickable-value" data-full-value="${cookie.value.replace(
+                          /"/g,
+                          "&quot;"
+                        )}" title="Click to copy value">${
+                  cookie.value.length > 50
+                    ? breakLongString(cookie.value.substring(0, 50)) + "..."
+                    : breakLongString(cookie.value)
+                }</span>
+                      </div>
+                      <button class="search-cookie-delete-btn" data-cookie-name="${cookie.name.replace(
+                        /"/g,
+                        "&quot;"
+                      )}" data-cookie-domain="${
+                  cookie.domain
+                }" data-cookie-path="${
+                  cookie.path
+                }" title="Delete this cookie"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="#dc3545"><path d="M5 7v19c0 1.326.527 2.598 1.464 3.536A5.004 5.004 0 0 0 10 31h12a5.004 5.004 0 0 0 3.536-1.464A5.004 5.004 0 0 0 27 26V7h3a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h3Zm20 0v19c0 .796-.316 1.559-.879 2.121A2.996 2.996 0 0 1 22 29H10a2.996 2.996 0 0 1-2.121-.879A2.996 2.996 0 0 1 7 26V7h18ZM11 3h10a1 1 0 0 0 0-2H11a1 1 0 0 0 0 2Z"/><path d="M12 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0ZM18 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0Z"/></svg></button>
+                    </div>
+                    <div class="cookie-details-search">
+                      <strong>Domain:</strong> ${cookie.domain}<br>
+                      <strong>Path:</strong> ${cookie.path}<br>
+                      <strong>Secure:</strong> ${
+                        cookie.secure ? "Yes" : "No"
+                      }<br>
+                      <strong>HttpOnly:</strong> ${
+                        cookie.httpOnly ? "Yes" : "No"
+                      }
+                    </div>
+                  </div>
+                `;
+              });
+
+              showSearchResult(cookiesInfo, "found");
             } else {
-              // Cookie not found - check if it might exist with different domains
+              // No cookies found - check if it might exist with different domains
               debugLog(
-                `Cookie not found on primary domain, checking variations...`,
+                `No cookies containing "${cookieName}" found on primary domain, checking variations...`,
                 "info"
               );
               searchCookieAllDomains(cookieName, domain, url);
@@ -2516,6 +2498,8 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Function to search cookie on all possible domain variations
   function searchCookieAllDomains(cookieName, currentDomain, currentUrl) {
+    const searchTerm = cookieName.toLowerCase().trim();
+
     // Try different domain variations
     const domainVariations = [
       currentDomain,
@@ -2524,7 +2508,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       `.${currentDomain.replace(/^www\./, "")}`,
     ];
 
-    let foundCookie = null;
+    let foundCookies = [];
     let searchCount = 0;
     let searchCompleted = false;
 
@@ -2539,10 +2523,10 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
     // Set a timeout for all domain searches
     const allSearchTimeout = setTimeout(() => {
-      if (!searchCompleted && !foundCookie) {
+      if (!searchCompleted && foundCookies.length === 0) {
         debugLog(`All domain searches timed out for ${cookieName}`, "error");
         showSearchResult(
-          `Search timed out - cookie "${breakLongString(
+          `Search timed out - cookies containing "${breakLongString(
             cookieName
           )}" not found`,
           "not-found"
@@ -2558,65 +2542,86 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
       debugLog(`Searching domain variation: ${domain} (${testUrl})`, "info");
 
-      chrome.cookies.get(
+      chrome.cookies.getAll(
         {
           url: testUrl,
-          name: cookieName,
         },
-        function (cookie) {
+        function (cookies) {
           searchCount++;
 
           if (searchCompleted) return; // Prevent multiple results
 
-          if (cookie && !foundCookie) {
-            foundCookie = cookie;
+          // Filter cookies that contain the search term
+          const matchingCookies = cookies.filter((cookie) =>
+            cookie.name.toLowerCase().includes(searchTerm)
+          );
+
+          if (matchingCookies.length > 0) {
+            foundCookies.push(...matchingCookies);
             searchCompleted = true;
             clearTimeout(allSearchTimeout);
 
             debugLog(
-              `Cookie found on domain variation: ${cookie.domain}`,
+              `${matchingCookies.length} cookie(s) found on domain variation: ${domain}`,
               "info"
             );
 
-            const cookieInfo = `
-              <div class="search-cookie-header">
-                <strong>Cookie found on ${cookie.domain}:</strong>
-                <button class="search-cookie-delete-btn" data-cookie-name="${cookie.name.replace(
-                  /"/g,
-                  "&quot;"
-                )}" data-cookie-domain="${cookie.domain}" data-cookie-path="${
-              cookie.path
-            }" title="Delete this cookie"><div class="trash-icon"></div></button>
-              </div>
-              <strong>${breakLongString(cookie.name)}</strong>
-              <div class="cookie-details-search">
-                <strong>Name:</strong> ${breakLongString(cookie.name)}<br>
-                <strong>Value:</strong> <span class="clickable-value" data-full-value="${cookie.value.replace(
-                  /"/g,
-                  "&quot;"
-                )}" title="Click to copy value">${
-              cookie.value.length > 50
-                ? breakLongString(cookie.value.substring(0, 50)) + "..."
-                : breakLongString(cookie.value)
-            }</span><br>
-                <strong>Domain:</strong> ${cookie.domain}<br>
-                <strong>Path:</strong> ${cookie.path}<br>
-                <strong>Note:</strong> This cookie exists but may not be accessible from current domain (${currentDomain})
-              </div>
-            `;
-            showSearchResult(cookieInfo, "found");
+            let cookiesInfo = `<div class="search-cookie-header"><strong>Found ${matchingCookies.length} cookie(s) on ${domain}:</strong></div>`;
+
+            matchingCookies.forEach((cookie, index) => {
+              cookiesInfo += `
+                <div class="search-result-item">
+                  <div class="search-cookie-header">
+                    <div class="search-name-value">
+                      <strong>Name:</strong> <span class="clickable-name" data-cookie-name="${cookie.name.replace(
+                        /"/g,
+                        "&quot;"
+                      )}" title="Click to copy name">${breakLongString(
+                cookie.name
+              )}</span><br>
+                      <strong>Value:</strong> <span class="clickable-value" data-full-value="${cookie.value.replace(
+                        /"/g,
+                        "&quot;"
+                      )}" title="Click to copy value">${
+                cookie.value.length > 50
+                  ? breakLongString(cookie.value.substring(0, 50)) + "..."
+                  : breakLongString(cookie.value)
+              }</span>
+                    </div>
+                    <button class="search-cookie-delete-btn" data-cookie-name="${cookie.name.replace(
+                      /"/g,
+                      "&quot;"
+                    )}" data-cookie-domain="${
+                cookie.domain
+              }" data-cookie-path="${
+                cookie.path
+              }" title="Delete this cookie"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="#dc3545"><path d="M5 7v19c0 1.326.527 2.598 1.464 3.536A5.004 5.004 0 0 0 10 31h12a5.004 5.004 0 0 0 3.536-1.464A5.004 5.004 0 0 0 27 26V7h3a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h3Zm20 0v19c0 .796-.316 1.559-.879 2.121A2.996 2.996 0 0 1 22 29H10a2.996 2.996 0 0 1-2.121-.879A2.996 2.996 0 0 1 7 26V7h18ZM11 3h10a1 1 0 0 0 0-2H11a1 1 0 0 0 0 2Z"/><path d="M12 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0ZM18 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0Z"/></svg></button>
+                  </div>
+                  <div class="cookie-details-search">
+                    <strong>Domain:</strong> ${cookie.domain}<br>
+                    <strong>Path:</strong> ${cookie.path}<br>
+                    <strong>Note:</strong> This cookie exists but may not be accessible from current domain (${currentDomain})
+                  </div>
+                </div>
+              `;
+            });
+
+            showSearchResult(cookiesInfo, "found");
           } else if (
             searchCount === uniqueDomains.length &&
-            !foundCookie &&
+            foundCookies.length === 0 &&
             !searchCompleted
           ) {
-            // All searches completed, no cookie found
+            // All searches completed, no cookies found
             searchCompleted = true;
             clearTimeout(allSearchTimeout);
 
-            debugLog(`Cookie not found in any domain variation`, "info");
+            debugLog(
+              `No cookies containing "${cookieName}" found in any domain variation`,
+              "info"
+            );
             showSearchResult(
-              `Cookie "${breakLongString(
+              `Cookies containing "${breakLongString(
                 cookieName
               )}" not found on current site or related domains`,
               "not-found"
@@ -2634,11 +2639,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       navigator.clipboard
         .writeText(cookieValue)
         .then(() => {
-          // Show temporary success message
-          showTemporaryMessage(
-            "✓ Cookie value copied to clipboard!",
-            "success"
-          );
+          showToast("✓ Value copied", "success");
         })
         .catch((err) => {
           debugLog(`Clipboard API failed: ${err}`, "error");
@@ -2655,9 +2656,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     // Create a temporary textarea
     const textArea = document.createElement("textarea");
     textArea.value = cookieValue;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    textArea.style.top = "-999999px";
+    textArea.className = "hidden-textarea";
     document.body.appendChild(textArea);
 
     try {
@@ -2665,13 +2664,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       textArea.select();
       const successful = document.execCommand("copy");
       if (successful) {
-        showTemporaryMessage("✓ Cookie value copied to clipboard!", "success");
+        showToast("✓ Value copied", "success");
       } else {
-        showTemporaryMessage("❌ Failed to copy cookie value", "error");
+        showToast("❌ Failed to copy", "error");
       }
     } catch (err) {
       debugLog(`Fallback copy failed: ${err}`, "error");
-      showTemporaryMessage("❌ Copy not supported", "error");
+      showToast("❌ Copy not supported", "error");
     }
 
     document.body.removeChild(textArea);
@@ -2703,11 +2702,6 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         }
       }, 300);
     }, duration);
-  }
-
-  // Function to show temporary message without affecting search results
-  function showTemporaryMessage(message, type) {
-    showToast(message, type, 2000);
   }
 
   // Function to copy site cookie name to clipboard
@@ -2748,9 +2742,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   function fallbackCopySiteCookieToClipboard(text, type, cookieItem) {
     const textArea = document.createElement("textarea");
     textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    textArea.style.top = "-999999px";
+    textArea.className = "hidden-textarea";
     document.body.appendChild(textArea);
 
     try {
@@ -2777,7 +2769,6 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     const searchResult = document.getElementById("search-result");
     searchResult.innerHTML = "";
     searchResult.className = "search-result";
-    searchResult.style.display = "none";
 
     // Clear any existing timers
     if (searchResult.hideTimer) {
@@ -2798,7 +2789,6 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
     searchResult.innerHTML = message;
     searchResult.className = `search-result ${type}`;
-    searchResult.style.display = "block";
 
     debugLog(`Search result: ${type} - ${message}`, "info");
 

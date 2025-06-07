@@ -77,6 +77,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
       setTimeout(function () {
         form.style.opacity = "1";
+        // Focus on the Name input after form is visible
+        const nameInput = form.querySelector("#cookieName");
+        if (nameInput) {
+          nameInput.focus();
+        }
       }, 50);
     }
   });
@@ -454,6 +459,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
           setTimeout(function () {
             form.style.opacity = "1";
+            // Focus on the Name input after form is visible
+            const nameInput = form.querySelector("#cookieName");
+            if (nameInput) {
+              nameInput.focus();
+            }
           }, 50);
         }
 
@@ -1568,25 +1578,61 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   // Handler for cookie search
   const searchCookieBtn = document.getElementById("searchCookieBtn");
   const cookieSearchInput = document.getElementById("cookieSearchInput");
+  const searchResult = document.getElementById("search-result");
+  const exportCookiesBtn = document.getElementById("exportCookiesBtn");
+  const importCookiesBtn = document.getElementById("importCookiesBtn");
+  const importFileInput = document.getElementById("importFileInput");
 
   searchCookieBtn.addEventListener("click", function () {
+    // Always close saved cookies accordion when focusing on search
+    closeSavedCookiesAccordion();
+
     const cookieName = cookieSearchInput.value.trim();
     if (cookieName) {
+      // Remove error state if exists
+      cookieSearchInput.classList.remove("search-input-error");
       searchCookieOnCurrentSite(cookieName);
     } else {
+      // Add error state and focus input
+      cookieSearchInput.classList.add("search-input-error");
+      cookieSearchInput.focus();
       showToast("Please enter a cookie name to search", "error");
+
+      // Remove error state after 3 seconds
+      setTimeout(() => {
+        cookieSearchInput.classList.remove("search-input-error");
+      }, 3000);
     }
   });
 
   // Allow search on Enter key
   cookieSearchInput.addEventListener("keypress", function (event) {
     if (event.key === "Enter") {
+      // Always close saved cookies accordion when focusing on search
+      closeSavedCookiesAccordion();
+
       const cookieName = event.target.value.trim();
       if (cookieName) {
+        // Remove error state if exists
+        cookieSearchInput.classList.remove("search-input-error");
         searchCookieOnCurrentSite(cookieName);
       } else {
+        // Add error state
+        cookieSearchInput.classList.add("search-input-error");
         showToast("Please enter a cookie name to search", "error");
+
+        // Remove error state after 3 seconds
+        setTimeout(() => {
+          cookieSearchInput.classList.remove("search-input-error");
+        }, 3000);
       }
+    }
+  });
+
+  // Clear error state when user starts typing
+  cookieSearchInput.addEventListener("input", function () {
+    if (cookieSearchInput.classList.contains("search-input-error")) {
+      cookieSearchInput.classList.remove("search-input-error");
     }
   });
 
@@ -2239,10 +2285,8 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
         if (result) {
           successfulRemoval = true;
-          showSearchResult(
-            `Cookie "${cookieName}" deleted successfully. You can search again to verify.`,
-            "success"
-          );
+          showToast(`✓ Cookie "${cookieName}" deleted successfully`, "success");
+          clearSearchResult();
 
           // Sync saved cookie buttons after cookie deletion
           setTimeout(() => {
@@ -2255,16 +2299,17 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         // If both attempts are done and none successful
         if (removalAttempts >= protocols.length && !successfulRemoval) {
           if (chrome.runtime.lastError) {
-            showSearchResult(
-              `Error deleting cookie "${cookieName}": ${chrome.runtime.lastError.message}`,
+            showToast(
+              `❌ Error deleting cookie "${cookieName}": ${chrome.runtime.lastError.message}`,
               "error"
             );
           } else {
-            showSearchResult(
-              `Cookie "${cookieName}" not found or could not be deleted`,
+            showToast(
+              `❌ Cookie "${cookieName}" not found or could not be deleted`,
               "error"
             );
           }
+          clearSearchResult();
         }
       });
     }
@@ -2335,6 +2380,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
         setTimeout(function () {
           form.style.opacity = "1";
+          // Focus on the Name input after form is visible
+          const nameInput = form.querySelector("#cookieName");
+          if (nameInput) {
+            nameInput.focus();
+          }
         }, 50);
       }
     }
@@ -2345,6 +2395,23 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         statusMessage.style.display = "none";
         hideStatusTimer = null;
       }, 3000);
+    }
+  }
+
+  // Function to close saved cookies accordion
+  function closeSavedCookiesAccordion() {
+    if (savedCookiesAccordion.classList.contains("active")) {
+      const content = savedCookiesAccordion.querySelector(".accordion-content");
+      const savedContent = content.querySelector(".saved-cookies-content");
+
+      // Animate content opacity
+      savedContent.style.opacity = "0";
+
+      setTimeout(function () {
+        savedCookiesAccordion.classList.remove("active");
+        content.style.maxHeight = "0";
+        content.style.padding = "0 15px";
+      }, 200);
     }
   }
 
@@ -3176,5 +3243,207 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         debugLog(`Error in domain check: ${e.message}`, "error");
       }
     });
+  }
+
+  // Export cookies functionality
+  exportCookiesBtn.addEventListener("click", function () {
+    exportSavedCookies();
+  });
+
+  // Import cookies functionality
+  importCookiesBtn.addEventListener("click", function () {
+    importFileInput.click();
+  });
+
+  // Handle file input change
+  importFileInput.addEventListener("change", function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      importSavedCookies(file);
+    }
+  });
+
+  // Export saved cookies to JSON file
+  function exportSavedCookies() {
+    chrome.storage.local.get(["savedCookies"], function (result) {
+      if (chrome.runtime.lastError) {
+        showToast(
+          `❌ Error reading cookies: ${chrome.runtime.lastError.message}`,
+          "error"
+        );
+        return;
+      }
+
+      const savedCookies = result.savedCookies || [];
+
+      if (savedCookies.length === 0) {
+        showToast("No saved cookies to export", "info");
+        return;
+      }
+
+      // Create export data with metadata
+      const exportData = {
+        version: "1.0",
+        timestamp: new Date().toISOString(),
+        cookieCount: savedCookies.length,
+        cookies: savedCookies,
+      };
+
+      // Create JSON blob
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cookies-export-${
+        new Date().toISOString().split("T")[0]
+      }.json`;
+
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Clean up object URL
+      URL.revokeObjectURL(url);
+
+      showToast(`✓ Exported ${savedCookies.length} cookies`, "success");
+      debugLog(`Exported ${savedCookies.length} cookies to file`, "info");
+    });
+  }
+
+  // Import cookies from JSON file
+  function importSavedCookies(file) {
+    if (!file) {
+      showToast("❌ No file selected", "error");
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      showToast("❌ Please select a JSON file", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      try {
+        const importData = JSON.parse(e.target.result);
+
+        // Validate import data structure
+        if (!importData || typeof importData !== "object") {
+          throw new Error("Invalid file structure");
+        }
+
+        if (!importData.cookies || !Array.isArray(importData.cookies)) {
+          throw new Error("No valid cookies array found");
+        }
+
+        const importedCookies = importData.cookies;
+
+        if (importedCookies.length === 0) {
+          showToast("No cookies found in file", "info");
+          return;
+        }
+
+        // Validate each cookie has required fields
+        for (let i = 0; i < importedCookies.length; i++) {
+          const cookie = importedCookies[i];
+          if (!cookie.id || !cookie.name || cookie.value === undefined) {
+            throw new Error(`Invalid cookie data at index ${i}`);
+          }
+        }
+
+        // Force fresh read from storage to get current state
+        chrome.storage.local.get(["savedCookies"], function (result) {
+          if (chrome.runtime.lastError) {
+            showToast(
+              `❌ Error reading existing cookies: ${chrome.runtime.lastError.message}`,
+              "error"
+            );
+            importFileInput.value = "";
+            return;
+          }
+
+          const existingCookies = result.savedCookies || [];
+          debugLog(
+            `Current saved cookies count: ${existingCookies.length}`,
+            "info"
+          );
+          const existingNames = new Set(existingCookies.map((c) => c.name));
+          debugLog(
+            `Existing cookie names: ${Array.from(existingNames).join(", ")}`,
+            "info"
+          );
+
+          // Filter out cookies that already exist (by name)
+          const newCookies = importedCookies.filter(
+            (cookie) => !existingNames.has(cookie.name)
+          );
+
+          if (newCookies.length === 0) {
+            showToast(
+              "All cookies already exist (by name) - no new cookies imported",
+              "info"
+            );
+            // Clear file input even when no new cookies to import
+            importFileInput.value = "";
+            return;
+          }
+
+          // Generate new IDs for imported cookies to avoid conflicts
+          const cookiesWithNewIds = newCookies.map((cookie) => ({
+            ...cookie,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          }));
+
+          // Merge new cookies with existing ones
+          const mergedCookies = [...existingCookies, ...cookiesWithNewIds];
+
+          // Save merged cookies
+          chrome.storage.local.set(
+            { savedCookies: mergedCookies },
+            function () {
+              if (chrome.runtime.lastError) {
+                showToast(
+                  `❌ Error saving cookies: ${chrome.runtime.lastError.message}`,
+                  "error"
+                );
+                return;
+              }
+
+              // Clear file input to allow reimporting same file
+              importFileInput.value = "";
+
+              // Reload the saved cookies display
+              loadSavedCookies();
+
+              const skippedCount = importedCookies.length - newCookies.length;
+              let message = `✓ Imported ${newCookies.length} cookies`;
+              if (skippedCount > 0) {
+                message += ` (${skippedCount} skipped - already exist)`;
+              }
+
+              showToast(message, "success");
+              debugLog(
+                `Imported ${newCookies.length} new cookies, skipped ${skippedCount} existing`,
+                "info"
+              );
+            }
+          );
+        });
+      } catch (error) {
+        showToast(`❌ Error reading file: ${error.message}`, "error");
+        debugLog(`Import error: ${error.message}`, "error");
+      }
+    };
+
+    reader.onerror = function () {
+      showToast("❌ Error reading file", "error");
+    };
+
+    reader.readAsText(file);
   }
 });

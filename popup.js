@@ -77,6 +77,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
       setTimeout(function () {
         form.style.opacity = "1";
+        // Focus on the Name input after form is visible
+        const nameInput = form.querySelector("#cookieName");
+        if (nameInput) {
+          nameInput.focus();
+        }
       }, 50);
     }
   });
@@ -198,6 +203,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Load saved cookies when popup opens
   loadSavedCookies();
+
+  // Auto-sync cookie states when extension opens
+  // autoSyncCookieStates(); // REMOVED - call after DOM creation
 
   // Initialize form state on load (global cookie by default)
   cookieDomainInput.disabled = isGlobalCookieCheckbox.checked;
@@ -451,6 +459,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
           setTimeout(function () {
             form.style.opacity = "1";
+            // Focus on the Name input after form is visible
+            const nameInput = form.querySelector("#cookieName");
+            if (nameInput) {
+              nameInput.focus();
+            }
           }, 50);
         }
 
@@ -489,6 +502,261 @@ document.addEventListener("DOMContentLoaded", function () {
         const cookieItem = createCookieElement(cookie);
         cookiesList.appendChild(cookieItem);
       });
+
+      // Sync button states after DOM elements are created
+      setTimeout(() => {
+        autoSyncCookieStates();
+      }, 100);
+
+      // Initialize drag and drop after cookies are loaded (only if there are cookies)
+      if (savedCookies.length > 1) {
+        setTimeout(() => {
+          initializeDragAndDrop();
+        }, 150);
+      }
+
+      // Update draggable state based on cookie count
+      updateDraggableState(savedCookies.length);
+    });
+  }
+
+  // Update draggable state based on number of cookies
+  function updateDraggableState(cookieCount) {
+    const cookieItems = document.querySelectorAll(".cookie-item");
+
+    cookieItems.forEach((item) => {
+      if (cookieCount > 1) {
+        // Enable dragging
+        item.draggable = true;
+        item.classList.add("draggable-enabled");
+        item.classList.remove("draggable-disabled");
+      } else {
+        // Disable dragging
+        item.draggable = false;
+        item.classList.add("draggable-disabled");
+        item.classList.remove("draggable-enabled");
+      }
+    });
+
+    // Update cookies list class for styling
+    if (cookieCount > 1) {
+      cookiesList.classList.add("multi-cookies");
+      cookiesList.classList.remove("single-cookie");
+    } else {
+      cookiesList.classList.add("single-cookie");
+      cookiesList.classList.remove("multi-cookies");
+    }
+
+    debugLog(
+      `Updated draggable state for ${cookieCount} cookies: ${
+        cookieCount > 1 ? "enabled" : "disabled"
+      }`,
+      "info"
+    );
+  }
+
+  // Initialize drag and drop functionality
+  function initializeDragAndDrop() {
+    let draggedElement = null;
+    let dragOverElement = null;
+
+    function handleDragStart(e) {
+      if (!e.target.classList.contains("cookie-item")) return;
+
+      draggedElement = e.target;
+      e.target.classList.add("dragging");
+      cookiesList.classList.add("dragging-active");
+
+      // Set drag data
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/html", e.target.outerHTML);
+
+      debugLog(`Started dragging cookie: ${e.target.dataset.id}`, "info");
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+
+      const afterElement = getDragAfterElement(cookiesList, e.clientY);
+      const dragging = document.querySelector(".dragging");
+
+      if (afterElement == null) {
+        cookiesList.appendChild(dragging);
+      } else {
+        cookiesList.insertBefore(dragging, afterElement);
+      }
+    }
+
+    function handleDragEnter(e) {
+      e.preventDefault();
+      if (
+        e.target.classList.contains("cookie-item") &&
+        e.target !== draggedElement
+      ) {
+        // Remove previous drag-over classes
+        document
+          .querySelectorAll(".drag-over, .drag-over-bottom")
+          .forEach((el) => {
+            el.classList.remove("drag-over", "drag-over-bottom");
+          });
+
+        dragOverElement = e.target;
+
+        // Determine if we should show border above or below
+        const rect = e.target.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const elementMiddle = rect.top + rect.height / 2;
+
+        if (mouseY < elementMiddle) {
+          e.target.classList.add("drag-over");
+        } else {
+          e.target.classList.add("drag-over-bottom");
+        }
+      }
+    }
+
+    function handleDragLeave(e) {
+      if (e.target.classList.contains("cookie-item")) {
+        e.target.classList.remove("drag-over", "drag-over-bottom");
+      }
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+
+      if (draggedElement) {
+        // Get the new order of cookie IDs
+        const cookieElements = Array.from(
+          cookiesList.querySelectorAll(".cookie-item")
+        );
+        const newOrder = cookieElements.map((el) => el.dataset.id);
+
+        // Update the order in storage
+        updateCookieOrder(newOrder);
+
+        debugLog(`Dropped cookie, new order: ${newOrder.join(", ")}`, "info");
+        showToast("✓ Cookie order updated", "success");
+      }
+
+      // Clean up
+      document
+        .querySelectorAll(".drag-over, .drag-over-bottom")
+        .forEach((el) => {
+          el.classList.remove("drag-over", "drag-over-bottom");
+        });
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove("dragging");
+      cookiesList.classList.remove("dragging-active");
+
+      // Clean up all drag classes
+      document
+        .querySelectorAll(".drag-over, .drag-over-bottom")
+        .forEach((el) => {
+          el.classList.remove("drag-over", "drag-over-bottom");
+        });
+
+      draggedElement = null;
+      dragOverElement = null;
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [
+        ...container.querySelectorAll(".cookie-item:not(.dragging)"),
+      ];
+
+      return draggableElements.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+          } else {
+            return closest;
+          }
+        },
+        { offset: Number.NEGATIVE_INFINITY }
+      ).element;
+    }
+
+    // Store function references for cleanup
+    if (!cookiesList._dragHandlers) {
+      cookiesList._dragHandlers = {
+        dragstart: handleDragStart,
+        dragover: handleDragOver,
+        dragenter: handleDragEnter,
+        dragleave: handleDragLeave,
+        drop: handleDrop,
+        dragend: handleDragEnd,
+      };
+    }
+
+    // Remove existing event listeners to prevent duplicates
+    Object.entries(cookiesList._dragHandlers).forEach(([event, handler]) => {
+      cookiesList.removeEventListener(event, handler);
+    });
+
+    // Add event listeners to cookies list
+    cookiesList.addEventListener("dragstart", handleDragStart);
+    cookiesList.addEventListener("dragover", handleDragOver);
+    cookiesList.addEventListener("dragenter", handleDragEnter);
+    cookiesList.addEventListener("dragleave", handleDragLeave);
+    cookiesList.addEventListener("drop", handleDrop);
+    cookiesList.addEventListener("dragend", handleDragEnd);
+
+    // Update stored handlers
+    cookiesList._dragHandlers = {
+      dragstart: handleDragStart,
+      dragover: handleDragOver,
+      dragenter: handleDragEnter,
+      dragleave: handleDragLeave,
+      drop: handleDrop,
+      dragend: handleDragEnd,
+    };
+  }
+
+  // Update cookie order in storage
+  function updateCookieOrder(newOrder) {
+    chrome.storage.local.get(["savedCookies"], function (result) {
+      if (chrome.runtime.lastError) {
+        debugLog(
+          `Error reading cookies for reorder: ${chrome.runtime.lastError.message}`,
+          "error"
+        );
+        return;
+      }
+
+      const savedCookies = result.savedCookies || [];
+
+      // Create a map for quick lookup
+      const cookieMap = new Map();
+      savedCookies.forEach((cookie) => {
+        cookieMap.set(cookie.id, cookie);
+      });
+
+      // Reorder cookies according to new order
+      const reorderedCookies = newOrder
+        .map((id) => cookieMap.get(id))
+        .filter((cookie) => cookie);
+
+      // Save the new order
+      chrome.storage.local.set({ savedCookies: reorderedCookies }, function () {
+        if (chrome.runtime.lastError) {
+          debugLog(
+            `Error saving reordered cookies: ${chrome.runtime.lastError.message}`,
+            "error"
+          );
+          showToast("❌ Failed to save cookie order", "error");
+        } else {
+          debugLog(
+            `Successfully reordered ${reorderedCookies.length} cookies`,
+            "info"
+          );
+        }
+      });
     });
   }
 
@@ -502,6 +770,24 @@ document.addEventListener("DOMContentLoaded", function () {
     const cookieItem = document.createElement("div");
     cookieItem.className = "cookie-item";
     cookieItem.dataset.id = decryptedCookie.id;
+    // Draggable state will be set by updateDraggableState function
+
+    // Drag handle
+    const dragHandle = document.createElement("div");
+    dragHandle.className = "drag-handle";
+    dragHandle.innerHTML = "⋮⋮";
+    dragHandle.title = "Drag to reorder";
+
+    // Delete button (trash icon) in top-right corner
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-btn-icon";
+    deleteBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="#dc3545"><path d="M5 7v19c0 1.326.527 2.598 1.464 3.536A5.004 5.004 0 0 0 10 31h12a5.004 5.004 0 0 0 3.536-1.464A5.004 5.004 0 0 0 27 26V7h3a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h3Zm20 0v19c0 .796-.316 1.559-.879 2.121A2.996 2.996 0 0 1 22 29H10a2.996 2.996 0 0 1-2.121-.879A2.996 2.996 0 0 1 7 26V7h18ZM11 3h10a1 1 0 0 0 0-2H11a1 1 0 0 0 0 2Z"/><path d="M12 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0ZM18 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0Z"/></svg>';
+    deleteBtn.title = "Remove cookie from list";
+    deleteBtn.addEventListener("click", function () {
+      debugLog(`Deleting cookie: ${decryptedCookie.name}`, "info");
+      deleteCookie(decryptedCookie.id);
+    });
 
     const cookieInfo = document.createElement("div");
     cookieInfo.className = "cookie-info";
@@ -543,51 +829,28 @@ document.addEventListener("DOMContentLoaded", function () {
     cookieInfo.appendChild(cookieName);
     cookieInfo.appendChild(cookieDetails);
 
-    const cookieControls = document.createElement("div");
-    cookieControls.className = "cookie-controls";
-
-    // Toggle cookie button
+    // Toggle cookie button (full width)
     const toggleBtn = document.createElement("button");
-    toggleBtn.className = "toggle-btn";
-    toggleBtn.textContent = "On/Off";
+    toggleBtn.className = "toggle-btn-full";
+    toggleBtn.textContent = "Add/Remove";
     toggleBtn.title = "Add/remove cookie on current site";
     toggleBtn.addEventListener("click", function () {
       debugLog(`Toggling cookie: ${decryptedCookie.name}`, "info");
       toggleCookie(decryptedCookie.id);
     });
 
-    // Check cookie button
-    const checkBtn = document.createElement("button");
-    checkBtn.className = "check-btn";
-    checkBtn.textContent = "Check";
-    checkBtn.title = "Check if cookie exists on current site";
-    checkBtn.addEventListener("click", function () {
-      debugLog(`Checking cookie existence: ${decryptedCookie.name}`, "info");
-      checkCookieExistence(decryptedCookie, cookieItem);
-    });
-
-    // Delete cookie button
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "delete-btn";
-    deleteBtn.textContent = "Delete";
-    deleteBtn.title = "Remove cookie from list";
-    deleteBtn.addEventListener("click", function () {
-      debugLog(`Deleting cookie: ${decryptedCookie.name}`, "info");
-      deleteCookie(decryptedCookie.id);
-    });
-
-    cookieControls.appendChild(toggleBtn);
-    cookieControls.appendChild(checkBtn);
-    cookieControls.appendChild(deleteBtn);
-
+    cookieItem.appendChild(deleteBtn);
     cookieItem.appendChild(cookieInfo);
-    cookieItem.appendChild(cookieControls);
+    cookieItem.appendChild(toggleBtn);
 
     // Add status message field for this cookie item operations
     const statusMessage = document.createElement("div");
     statusMessage.className = "cookie-status-message";
     statusMessage.id = `status-${decryptedCookie.id}`;
     cookieItem.appendChild(statusMessage);
+
+    // Add drag handle
+    cookieItem.appendChild(dragHandle);
 
     return cookieItem;
   }
@@ -717,149 +980,6 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     }
 
     document.body.removeChild(textArea);
-  }
-
-  // Function to check if cookie exists on current site
-  function checkCookieExistence(cookie, cookieItem) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      if (!tabs[0] || !tabs[0].url) {
-        debugLog("No active tab to check cookie", "error");
-        showToast("No active tab to check cookie", "error");
-        return;
-      }
-
-      try {
-        const urlObj = new URL(tabs[0].url);
-        const domain = urlObj.hostname;
-
-        // Validate cookie name for security
-        const nameValidation = validateCookieName(cookie.name);
-        if (!nameValidation.valid) {
-          debugLog(`Invalid cookie name: ${nameValidation.message}`, "error");
-          showToast(`Invalid cookie name: ${nameValidation.message}`, "error");
-          return;
-        }
-
-        // For global cookies, use current domain
-        const cookieDomain = cookie.isGlobal ? domain : cookie.domain;
-        const cookiePath = cookie.path || "/";
-
-        // For non-global cookies, check if current domain matches the cookie domain
-        if (!cookie.isGlobal) {
-          let domainMatches = false;
-
-          // Check for exact domain match
-          if (cookie.domain === domain) {
-            domainMatches = true;
-          }
-          // Check for subdomain (if cookie domain starts with a dot)
-          else if (
-            cookie.domain.startsWith(".") &&
-            domain.endsWith(cookie.domain.substring(1))
-          ) {
-            domainMatches = true;
-          }
-
-          if (!domainMatches) {
-            debugLog(
-              `Domain mismatch: Cookie domain ${cookie.domain} doesn't match current domain ${domain}`,
-              "error"
-            );
-            showToast(
-              `Cookie "${cookie.name}" is specific to ${cookie.domain} domain. Can't check on current domain (${domain}).`,
-              "error"
-            );
-            return;
-          }
-        }
-
-        // Validate domain and path
-        if (!cookie.isGlobal) {
-          const domainValidation = validateCookieDomain(cookieDomain, false);
-          if (!domainValidation.valid) {
-            debugLog(
-              `Invalid cookie domain: ${domainValidation.message}`,
-              "error"
-            );
-            showToast(
-              `Invalid cookie domain: ${domainValidation.message}`,
-              "error"
-            );
-            return;
-          }
-        }
-
-        const pathValidation = validateCookiePath(cookiePath);
-        if (!pathValidation.valid) {
-          debugLog(`Invalid cookie path: ${pathValidation.message}`, "error");
-          showToast(`Invalid cookie path: ${pathValidation.message}`, "error");
-          return;
-        }
-
-        // Check cookie existence through chrome.cookies API
-        const url = `http${cookieDomain.startsWith(".") ? "s" : ""}://${
-          cookieDomain.startsWith(".")
-            ? cookieDomain.substring(1)
-            : cookieDomain
-        }${cookiePath}`;
-
-        debugLog(`Checking cookie with URL: ${url}`, "info");
-
-        chrome.cookies.get(
-          {
-            url: url,
-            name: cookie.name,
-          },
-          function (result) {
-            if (chrome.runtime.lastError) {
-              debugLog(
-                `Error checking cookie: ${chrome.runtime.lastError.message}`,
-                "error"
-              );
-              showToast(
-                `Error checking cookie: ${chrome.runtime.lastError.message}`,
-                "error"
-              );
-              return;
-            }
-
-            if (result) {
-              debugLog(
-                `Found cookie "${cookie.name}" on site ${domain}:`,
-                "info"
-              );
-              debugLog(`Value: ${result.value}`, "info");
-              debugLog(`Path: ${result.path}`, "info");
-              debugLog(`Domain: ${result.domain}`, "info");
-              debugLog(
-                `Expires: ${new Date(
-                  result.expirationDate * 1000
-                ).toLocaleString()}`,
-                "info"
-              );
-
-              // Show message with information
-              showToast(
-                `Cookie "${cookie.name}" is already set on ${domain}`,
-                "success"
-              );
-            } else {
-              debugLog(
-                `Cookie "${cookie.name}" not found on site ${domain}`,
-                "info"
-              );
-              showToast(
-                `Cookie "${cookie.name}" not found on current site`,
-                "error"
-              );
-            }
-          }
-        );
-      } catch (e) {
-        debugLog(`Error processing URL: ${e.message}`, "error");
-        showToast(`Error: ${e.message}`, "error");
-      }
-    });
   }
 
   // Function to enable/disable cookie
@@ -1025,6 +1145,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                           "success"
                         );
                       }
+
+                      // Update button state after toggle operation
+                      setTimeout(() => {
+                        autoSyncCookieStates();
+                      }, 200);
                     }
                   );
                 })
@@ -1102,6 +1227,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
           // No need for global status message as the deleted cookie will no longer be in the list
           // This prevents duplicate messages
         });
+
+        // Auto-sync cookie states after deletion
+        setTimeout(() => {
+          autoSyncCookieStates();
+        }, 200);
       } else {
         debugLog(`Cookie with ID ${cookieId} not found`, "error");
       }
@@ -1448,25 +1578,61 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   // Handler for cookie search
   const searchCookieBtn = document.getElementById("searchCookieBtn");
   const cookieSearchInput = document.getElementById("cookieSearchInput");
+  const searchResult = document.getElementById("search-result");
+  const exportCookiesBtn = document.getElementById("exportCookiesBtn");
+  const importCookiesBtn = document.getElementById("importCookiesBtn");
+  const importFileInput = document.getElementById("importFileInput");
 
   searchCookieBtn.addEventListener("click", function () {
+    // Always close saved cookies accordion when focusing on search
+    closeSavedCookiesAccordion();
+
     const cookieName = cookieSearchInput.value.trim();
     if (cookieName) {
+      // Remove error state if exists
+      cookieSearchInput.classList.remove("search-input-error");
       searchCookieOnCurrentSite(cookieName);
     } else {
-      showSearchResult("Please enter a cookie name to search", "error");
+      // Add error state and focus input
+      cookieSearchInput.classList.add("search-input-error");
+      cookieSearchInput.focus();
+      showToast("Please enter a cookie name to search", "error");
+
+      // Remove error state after 3 seconds
+      setTimeout(() => {
+        cookieSearchInput.classList.remove("search-input-error");
+      }, 3000);
     }
   });
 
   // Allow search on Enter key
   cookieSearchInput.addEventListener("keypress", function (event) {
     if (event.key === "Enter") {
+      // Always close saved cookies accordion when focusing on search
+      closeSavedCookiesAccordion();
+
       const cookieName = event.target.value.trim();
       if (cookieName) {
+        // Remove error state if exists
+        cookieSearchInput.classList.remove("search-input-error");
         searchCookieOnCurrentSite(cookieName);
       } else {
-        showSearchResult("Please enter a cookie name to search", "error");
+        // Add error state
+        cookieSearchInput.classList.add("search-input-error");
+        showToast("Please enter a cookie name to search", "error");
+
+        // Remove error state after 3 seconds
+        setTimeout(() => {
+          cookieSearchInput.classList.remove("search-input-error");
+        }, 3000);
       }
+    }
+  });
+
+  // Clear error state when user starts typing
+  cookieSearchInput.addEventListener("input", function () {
+    if (cookieSearchInput.classList.contains("search-input-error")) {
+      cookieSearchInput.classList.remove("search-input-error");
     }
   });
 
@@ -1768,8 +1934,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
               if (removedCount === totalCount) {
                 showStatus(
                   `Removed ${successCount} of ${totalCount} cookies from this page`,
-                  successCount > 0 ? "success" : "info"
+                  "success"
                 );
+
+                // Sync saved cookie buttons after clearing all cookies
+                setTimeout(() => {
+                  autoSyncCookieStates();
+                }, 300);
               }
               return;
             }
@@ -1794,6 +1965,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                       `Removed ${successCount} of ${totalCount} cookies from this page`,
                       "success"
                     );
+
+                    // Sync saved cookie buttons after clearing all cookies
+                    setTimeout(() => {
+                      autoSyncCookieStates();
+                    }, 300);
                   }
                 } else {
                   attemptIndex++;
@@ -1967,6 +2143,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
           showToast(`Cookie "${cookieName}" deleted successfully`, "error");
           // Remove the specific cookie element from DOM instead of refreshing entire list
           removeCookieElementFromDOM(cookieName, cookieDomain, cookiePath);
+
+          // Sync saved cookie buttons after cookie deletion
+          setTimeout(() => {
+            autoSyncCookieStates();
+          }, 200);
+
           return;
         }
 
@@ -2103,26 +2285,31 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
         if (result) {
           successfulRemoval = true;
-          showSearchResult(
-            `Cookie "${cookieName}" deleted successfully. You can search again to verify.`,
-            "success"
-          );
+          showToast(`✓ Cookie "${cookieName}" deleted successfully`, "success");
+          clearSearchResult();
+
+          // Sync saved cookie buttons after cookie deletion
+          setTimeout(() => {
+            autoSyncCookieStates();
+          }, 200);
+
           return;
         }
 
         // If both attempts are done and none successful
         if (removalAttempts >= protocols.length && !successfulRemoval) {
           if (chrome.runtime.lastError) {
-            showSearchResult(
-              `Error deleting cookie "${cookieName}": ${chrome.runtime.lastError.message}`,
+            showToast(
+              `❌ Error deleting cookie "${cookieName}": ${chrome.runtime.lastError.message}`,
               "error"
             );
           } else {
-            showSearchResult(
-              `Cookie "${cookieName}" not found or could not be deleted`,
+            showToast(
+              `❌ Cookie "${cookieName}" not found or could not be deleted`,
               "error"
             );
           }
+          clearSearchResult();
         }
       });
     }
@@ -2193,6 +2380,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
         setTimeout(function () {
           form.style.opacity = "1";
+          // Focus on the Name input after form is visible
+          const nameInput = form.querySelector("#cookieName");
+          if (nameInput) {
+            nameInput.focus();
+          }
         }, 50);
       }
     }
@@ -2203,6 +2395,23 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         statusMessage.style.display = "none";
         hideStatusTimer = null;
       }, 3000);
+    }
+  }
+
+  // Function to close saved cookies accordion
+  function closeSavedCookiesAccordion() {
+    if (savedCookiesAccordion.classList.contains("active")) {
+      const content = savedCookiesAccordion.querySelector(".accordion-content");
+      const savedContent = content.querySelector(".saved-cookies-content");
+
+      // Animate content opacity
+      savedContent.style.opacity = "0";
+
+      setTimeout(function () {
+        savedCookiesAccordion.classList.remove("active");
+        content.style.maxHeight = "0";
+        content.style.padding = "0 15px";
+      }, 200);
     }
   }
 
@@ -2356,6 +2565,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     // Clear previous results
     clearSearchResult();
 
+    // Validate that search term is not empty
+    if (!cookieName || cookieName.trim() === "") {
+      showToast("Please enter a cookie name to search", "error");
+      return;
+    }
+
     // Show searching status
     showSearchResult(
       `Searching for cookies containing "${breakLongString(
@@ -2364,17 +2579,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       "searching"
     );
 
-    // Validate that search term is not empty
-    if (!cookieName || cookieName.trim() === "") {
-      showSearchResult("Please enter a cookie name to search", "error");
-      return;
-    }
-
     const searchTerm = cookieName.toLowerCase().trim();
 
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (!tabs[0] || !tabs[0].url) {
-        showSearchResult("No active tab to search cookie", "error");
+        showToast("No active tab to search cookie", "error");
+        clearSearchResult();
         return;
       }
 
@@ -2395,10 +2605,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         const searchTimeout = setTimeout(() => {
           if (!searchCompleted) {
             debugLog(`Cookie search timed out for ${cookieName}`, "error");
-            showSearchResult(
+            showToast(
               `Search timed out for cookie "${breakLongString(cookieName)}"`,
               "error"
             );
+            clearSearchResult();
           }
         }, 5000);
 
@@ -2415,10 +2626,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                 `Chrome cookies API error: ${chrome.runtime.lastError.message}`,
                 "error"
               );
-              showSearchResult(
+              showToast(
                 `Error searching cookie: ${chrome.runtime.lastError.message}`,
                 "error"
               );
+              clearSearchResult();
               return;
             }
 
@@ -2491,7 +2703,8 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
           }
         );
       } catch (e) {
-        showSearchResult(`Error: ${e.message}`, "error");
+        showToast(`Error: ${e.message}`, "error");
+        clearSearchResult();
       }
     });
   }
@@ -2525,12 +2738,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     const allSearchTimeout = setTimeout(() => {
       if (!searchCompleted && foundCookies.length === 0) {
         debugLog(`All domain searches timed out for ${cookieName}`, "error");
-        showSearchResult(
+        showToast(
           `Search timed out - cookies containing "${breakLongString(
             cookieName
           )}" not found`,
-          "not-found"
+          "error"
         );
+        clearSearchResult();
         searchCompleted = true;
       }
     }, 8000);
@@ -2620,12 +2834,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
               `No cookies containing "${cookieName}" found in any domain variation`,
               "info"
             );
-            showSearchResult(
+            showToast(
               `Cookies containing "${breakLongString(
                 cookieName
               )}" not found on current site or related domains`,
-              "not-found"
+              "error"
             );
+            clearSearchResult();
           }
         }
       );
@@ -2799,11 +3014,436 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       }, 8000);
     }
 
+    // Auto-hide error and not-found messages after 5 seconds
+    if (type === "error" || type === "not-found") {
+      searchResult.hideTimer = setTimeout(() => {
+        clearSearchResult();
+      }, 5000);
+    }
+
     // Auto-hide searching status after 10 seconds (as fallback)
     if (type === "searching") {
       searchResult.hideTimer = setTimeout(() => {
-        showSearchResult("Search timed out", "error");
+        showToast("Search timed out", "error");
+        clearSearchResult();
       }, 10000);
     }
+  }
+
+  // Function to automatically sync cookie states (optimized)
+  function autoSyncCookieStates() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0] || !tabs[0].url) {
+        debugLog("No active tab for auto-sync", "info");
+        return;
+      }
+
+      try {
+        const urlObj = new URL(tabs[0].url);
+        const domain = urlObj.hostname;
+
+        // Get saved cookies from storage
+        chrome.storage.local.get(["savedCookies"], function (result) {
+          const savedCookies = result.savedCookies || [];
+
+          if (savedCookies.length === 0) {
+            return;
+          }
+
+          // OPTIMIZATION: Single API call for all domain cookies
+          chrome.cookies.getAll({ domain }, function (browserCookies) {
+            if (chrome.runtime.lastError) {
+              debugLog(
+                `Auto-sync error: ${chrome.runtime.lastError.message}`,
+                "error"
+              );
+              return;
+            }
+
+            // Create Map for fast lookup (O(1) instead of O(n))
+            const browserCookiesMap = new Map();
+            browserCookies.forEach((cookie) => {
+              const key = `${cookie.name}:${cookie.domain}:${cookie.path}`;
+              browserCookiesMap.set(key, cookie);
+            });
+
+            // Check each saved cookie
+            savedCookies.forEach((savedCookie) => {
+              // First check if cookie can be applied to current domain
+              const canApply = canApplyCookieToCurrentDomain(
+                savedCookie,
+                domain
+              );
+
+              if (!canApply) {
+                // Disable button for domain mismatch
+                updateToggleButtonState(savedCookie.id, false, true); // true = disabled
+              } else {
+                // Check if cookie exists and update normally
+                const exists = checkCookieInMap(
+                  savedCookie,
+                  browserCookiesMap,
+                  domain
+                );
+                updateToggleButtonState(savedCookie.id, exists, false); // false = enabled
+              }
+            });
+
+            debugLog(
+              `Auto-synced ${savedCookies.length} cookies with 1 API call`,
+              "info"
+            );
+          });
+        });
+      } catch (e) {
+        debugLog(`Auto-sync URL error: ${e.message}`, "error");
+      }
+    });
+  }
+
+  // Optimized cookie existence check through Map
+  function checkCookieInMap(savedCookie, browserCookiesMap, currentDomain) {
+    const cookieName = savedCookie.name;
+    const targetDomain = savedCookie.isGlobal
+      ? currentDomain
+      : savedCookie.domain;
+    const cookiePath = savedCookie.path || "/";
+
+    // Try different key variants
+    const possibleKeys = [
+      `${cookieName}:${targetDomain}:${cookiePath}`,
+      `${cookieName}:.${targetDomain}:${cookiePath}`,
+      `${cookieName}:${targetDomain}:/`,
+      `${cookieName}:.${targetDomain}:/`,
+    ];
+
+    // Check if cookie exists with any of the possible keys
+    return possibleKeys.some((key) => browserCookiesMap.has(key));
+  }
+
+  // Function to update toggle button visual state
+  function updateToggleButtonState(cookieId, exists, disabled = false) {
+    const cookieItem = document.querySelector(
+      `.cookie-item[data-id="${cookieId}"]`
+    );
+    if (!cookieItem) {
+      debugLog(`Cookie item not found for ID: ${cookieId}`, "error");
+      return;
+    }
+
+    const toggleBtn = cookieItem.querySelector(".toggle-btn-full");
+    if (!toggleBtn) {
+      debugLog(`Toggle button not found for cookie ID: ${cookieId}`, "error");
+      return;
+    }
+
+    debugLog(
+      `Updating button state for cookie ${cookieId}: exists=${exists}, disabled=${disabled}`,
+      "info"
+    );
+
+    if (disabled) {
+      // Domain mismatch - disable button
+      toggleBtn.disabled = true;
+      toggleBtn.textContent = "Domain Mismatch";
+      toggleBtn.classList.add("disabled");
+      toggleBtn.classList.remove("cookie-exists", "cookie-missing");
+      toggleBtn.title = "Cannot apply this cookie to current domain";
+    } else if (exists) {
+      // Cookie exists - show as "Remove" button (can remove)
+      toggleBtn.disabled = false;
+      toggleBtn.textContent = "Remove";
+      toggleBtn.classList.add("cookie-exists");
+      toggleBtn.classList.remove("cookie-missing", "disabled");
+      toggleBtn.title = "Remove cookie from current site";
+    } else {
+      // Cookie doesn't exist - show as "Add" button (can add)
+      toggleBtn.disabled = false;
+      toggleBtn.textContent = "Add";
+      toggleBtn.classList.add("cookie-missing");
+      toggleBtn.classList.remove("cookie-exists", "disabled");
+      toggleBtn.title = "Add cookie to current site";
+    }
+  }
+
+  // Function to check if cookie can be applied to current domain
+  function canApplyCookieToCurrentDomain(cookie, currentDomain) {
+    // Global cookies can always be applied
+    if (cookie.isGlobal) {
+      return true;
+    }
+
+    // Check exact domain match
+    if (cookie.domain === currentDomain) {
+      return true;
+    }
+
+    // Check subdomain match (if cookie domain starts with a dot)
+    if (
+      cookie.domain.startsWith(".") &&
+      currentDomain.endsWith(cookie.domain.substring(1))
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Function to update toggle button state with domain check
+  function updateToggleButtonWithDomainCheck(cookieId) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0] || !tabs[0].url) {
+        return;
+      }
+
+      try {
+        const urlObj = new URL(tabs[0].url);
+        const currentDomain = urlObj.hostname;
+
+        // Get cookie data
+        chrome.storage.local.get(["savedCookies"], function (result) {
+          const savedCookies = result.savedCookies || [];
+          const cookie = savedCookies.find((c) => c.id === cookieId);
+
+          if (!cookie) {
+            return;
+          }
+
+          const cookieItem = document.querySelector(
+            `.cookie-item[data-id="${cookieId}"]`
+          );
+          if (!cookieItem) {
+            return;
+          }
+
+          const toggleBtn = cookieItem.querySelector(".toggle-btn-full");
+          if (!toggleBtn) {
+            return;
+          }
+
+          // Check if cookie can be applied to current domain
+          const canApply = canApplyCookieToCurrentDomain(cookie, currentDomain);
+
+          if (!canApply) {
+            // Disable button if domain doesn't match
+            toggleBtn.disabled = true;
+            toggleBtn.textContent = "Domain Mismatch";
+            toggleBtn.classList.add("disabled");
+            toggleBtn.classList.remove("cookie-exists", "cookie-missing");
+            toggleBtn.title = `Cannot apply this cookie to ${currentDomain}. Cookie is for ${cookie.domain}.`;
+          } else {
+            // Enable button and continue with normal sync
+            toggleBtn.disabled = false;
+            toggleBtn.classList.remove("disabled");
+            // Let normal auto-sync handle the state
+            autoSyncCookieStates();
+          }
+        });
+      } catch (e) {
+        debugLog(`Error in domain check: ${e.message}`, "error");
+      }
+    });
+  }
+
+  // Export cookies functionality
+  exportCookiesBtn.addEventListener("click", function () {
+    exportSavedCookies();
+  });
+
+  // Import cookies functionality
+  importCookiesBtn.addEventListener("click", function () {
+    importFileInput.click();
+  });
+
+  // Handle file input change
+  importFileInput.addEventListener("change", function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      importSavedCookies(file);
+    }
+  });
+
+  // Export saved cookies to JSON file
+  function exportSavedCookies() {
+    chrome.storage.local.get(["savedCookies"], function (result) {
+      if (chrome.runtime.lastError) {
+        showToast(
+          `❌ Error reading cookies: ${chrome.runtime.lastError.message}`,
+          "error"
+        );
+        return;
+      }
+
+      const savedCookies = result.savedCookies || [];
+
+      if (savedCookies.length === 0) {
+        showToast("No saved cookies to export", "info");
+        return;
+      }
+
+      // Create export data with metadata
+      const exportData = {
+        version: "1.0",
+        timestamp: new Date().toISOString(),
+        cookieCount: savedCookies.length,
+        cookies: savedCookies,
+      };
+
+      // Create JSON blob
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cookies-export-${
+        new Date().toISOString().split("T")[0]
+      }.json`;
+
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Clean up object URL
+      URL.revokeObjectURL(url);
+
+      showToast(`✓ Exported ${savedCookies.length} cookies`, "success");
+      debugLog(`Exported ${savedCookies.length} cookies to file`, "info");
+    });
+  }
+
+  // Import cookies from JSON file
+  function importSavedCookies(file) {
+    if (!file) {
+      showToast("❌ No file selected", "error");
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      showToast("❌ Please select a JSON file", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      try {
+        const importData = JSON.parse(e.target.result);
+
+        // Validate import data structure
+        if (!importData || typeof importData !== "object") {
+          throw new Error("Invalid file structure");
+        }
+
+        if (!importData.cookies || !Array.isArray(importData.cookies)) {
+          throw new Error("No valid cookies array found");
+        }
+
+        const importedCookies = importData.cookies;
+
+        if (importedCookies.length === 0) {
+          showToast("No cookies found in file", "info");
+          return;
+        }
+
+        // Validate each cookie has required fields
+        for (let i = 0; i < importedCookies.length; i++) {
+          const cookie = importedCookies[i];
+          if (!cookie.id || !cookie.name || cookie.value === undefined) {
+            throw new Error(`Invalid cookie data at index ${i}`);
+          }
+        }
+
+        // Force fresh read from storage to get current state
+        chrome.storage.local.get(["savedCookies"], function (result) {
+          if (chrome.runtime.lastError) {
+            showToast(
+              `❌ Error reading existing cookies: ${chrome.runtime.lastError.message}`,
+              "error"
+            );
+            importFileInput.value = "";
+            return;
+          }
+
+          const existingCookies = result.savedCookies || [];
+          debugLog(
+            `Current saved cookies count: ${existingCookies.length}`,
+            "info"
+          );
+          const existingNames = new Set(existingCookies.map((c) => c.name));
+          debugLog(
+            `Existing cookie names: ${Array.from(existingNames).join(", ")}`,
+            "info"
+          );
+
+          // Filter out cookies that already exist (by name)
+          const newCookies = importedCookies.filter(
+            (cookie) => !existingNames.has(cookie.name)
+          );
+
+          if (newCookies.length === 0) {
+            showToast(
+              "All cookies already exist (by name) - no new cookies imported",
+              "info"
+            );
+            // Clear file input even when no new cookies to import
+            importFileInput.value = "";
+            return;
+          }
+
+          // Generate new IDs for imported cookies to avoid conflicts
+          const cookiesWithNewIds = newCookies.map((cookie) => ({
+            ...cookie,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          }));
+
+          // Merge new cookies with existing ones
+          const mergedCookies = [...existingCookies, ...cookiesWithNewIds];
+
+          // Save merged cookies
+          chrome.storage.local.set(
+            { savedCookies: mergedCookies },
+            function () {
+              if (chrome.runtime.lastError) {
+                showToast(
+                  `❌ Error saving cookies: ${chrome.runtime.lastError.message}`,
+                  "error"
+                );
+                return;
+              }
+
+              // Clear file input to allow reimporting same file
+              importFileInput.value = "";
+
+              // Reload the saved cookies display
+              loadSavedCookies();
+
+              const skippedCount = importedCookies.length - newCookies.length;
+              let message = `✓ Imported ${newCookies.length} cookies`;
+              if (skippedCount > 0) {
+                message += ` (${skippedCount} skipped - already exist)`;
+              }
+
+              showToast(message, "success");
+              debugLog(
+                `Imported ${newCookies.length} new cookies, skipped ${skippedCount} existing`,
+                "info"
+              );
+            }
+          );
+        });
+      } catch (error) {
+        showToast(`❌ Error reading file: ${error.message}`, "error");
+        debugLog(`Import error: ${error.message}`, "error");
+      }
+    };
+
+    reader.onerror = function () {
+      showToast("❌ Error reading file", "error");
+    };
+
+    reader.readAsText(file);
   }
 });

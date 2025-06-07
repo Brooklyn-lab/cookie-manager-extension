@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=400, height=600">
   <title>Cookie Manager</title>
   <link rel="stylesheet" href="popup.css">
 </head>
@@ -60,6 +61,16 @@
           <div id="cookiesList" class="cookies-list">
             <!-- Cookies will be added via JavaScript -->
             <div class="no-cookies-message">No saved cookies yet</div>
+          </div>
+          
+          <!-- Export/Import buttons inside saved cookies -->
+          <div class="import-export-section">
+            <div class="import-export-buttons">
+              <button id="exportCookiesBtn" class="export-btn" title="Export saved cookies to JSON file">Export</button>
+              <button id="importCookiesBtn" class="import-btn" title="Import cookies from JSON file">Import</button>
+            </div>
+            <!-- Hidden file input -->
+            <input type="file" id="importFileInput" accept=".json">
           </div>
         </div>
       </div>

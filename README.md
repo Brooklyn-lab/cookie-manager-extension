@@ -1,6 +1,6 @@
 # Cookie Manager Browser Extension
 
-A powerful Chrome extension for managing cookies and site data.
+A powerful Chrome extension for managing cookies and site data with automatic synchronization and smart domain validation.
 
 ## Key Features
 
@@ -10,9 +10,11 @@ A powerful Chrome extension for managing cookies and site data.
 - **Global cookies** that work across all domains
 - **Save cookies** for future reuse across sessions
 - **Copy cookie names** with one click (click on cookie name)
-- **Toggle cookies** on/off with a single click
+- **Smart toggle buttons** that automatically sync with browser state
+- **Domain validation** - buttons show "Domain Mismatch" when cookies can't be applied to current site
+- **Auto-sync on startup** - button states automatically update when extension opens
+- **Real-time updates** - buttons sync when cookies are deleted from other parts of the extension
 - **Delete cookies** from your saved list
-- **Check cookie status** whether it's set on current site
 
 ### 🌐 Site Information
 
@@ -22,12 +24,14 @@ A powerful Chrome extension for managing cookies and site data.
 - **Search for specific cookies** on the current site
 - **Copy found cookies** from search results
 - **Delete cookies** from search results
+- **Toast notifications** for search errors instead of persistent messages
 
 ### 🧹 Data Clearing
 
 - **Delete all cookies** from current site
 - **Complete site data clearing** (cookies + localStorage + sessionStorage + IndexedDB + cache)
 - **Automatic page refresh** after clearing
+- **Auto-sync after clearing** - saved cookie buttons update automatically
 
 ### 🔍 Advanced Search
 
@@ -35,13 +39,23 @@ A powerful Chrome extension for managing cookies and site data.
 - **Automatic search** across domain variants (.domain.com, domain.com)
 - **Interactive results** with copyable values
 - **Timeout protection** against search hanging
+- **Clean error handling** with toast notifications
+- **Auto-clearing** of error messages
 
 ### 💬 Convenient Messaging
 
-- **Toast notifications** at the bottom of extension
+- **Toast notifications** at the bottom of extension for errors and confirmations
 - **Color-coded messages** (green for success, red for errors, blue for info)
 - **Animated notifications** for all operations
 - **Status indicators** for cookie management actions
+- **Clean UI** - search errors don't persist on screen
+
+### 🎨 Modern UI
+
+- **Outline button style** - buttons show colored border by default, fill on hover
+- **Consistent design** - Add (blue) and Remove (red) buttons follow same interaction pattern
+- **Visual feedback** - clear distinction between available, unavailable, and disabled states
+- **Responsive interface** - adapts to different content sizes
 
 ## Installation
 
@@ -58,7 +72,17 @@ A powerful Chrome extension for managing cookies and site data.
 1. **Click the extension icon** in your browser toolbar
 2. **Adding new cookies**: use the "Add new cookie" form
 3. **View saved cookies**: expand the "Saved cookies" section
-4. **Manage cookies**: use Toggle/Check/Delete buttons for each cookie
+4. **Smart buttons**:
+   - Blue "Add" button (outline) = cookie missing, can be added
+   - Red "Remove" button (outline) = cookie exists, can be removed
+   - Gray "Domain Mismatch" button = cookie can't be applied to current domain
+
+### Automatic Features
+
+- **Auto-sync on open**: Button states automatically update when you open the extension
+- **Real-time updates**: When you delete cookies from site cookies or search, saved cookie buttons automatically update
+- **Domain validation**: Buttons automatically detect if cookies can be applied to current domain
+- **Smart notifications**: Error messages use toast notifications that auto-dismiss
 
 ### Working with Sites
 
@@ -76,10 +100,18 @@ A powerful Chrome extension for managing cookies and site data.
 
 ## Technical Details
 
+### New Features
+
+- **Optimized cookie checking**: Single API call instead of multiple individual checks
+- **Map-based lookup**: O(1) performance for cookie existence checks
+- **Automatic synchronization**: Buttons update when cookies are modified anywhere in the extension
+- **Domain compatibility**: Smart detection of cookie-domain compatibility
+- **Enhanced error handling**: Toast notifications replace persistent error messages
+
 ### APIs Used
 
 - **Chrome Storage API** - saving cookie presets
-- **Chrome Cookies API** - managing cookies on websites
+- **Chrome Cookies API** - managing cookies on websites with optimized batch operations
 - **Chrome Tabs API** - identifying current site
 - **Chrome BrowsingData API** - clearing site data
 - **Chrome Scripting API** - script injection for storage clearing
@@ -90,12 +122,14 @@ A powerful Chrome extension for managing cookies and site data.
 - **Modular structure** - separated functions for different operations
 - **Event-driven** - using event delegation for dynamic content
 - **Responsive UI** - adaptive interface with animations
+- **Performance optimized** - batch API calls and efficient data structures
 
 ### Security
 
 - **Local storage** - all data stored only in browser
 - **Sanitized HTML** - XSS protection through proper escaping
 - **User permissions** - using only necessary permissions
+- **Domain validation** - prevents inappropriate cookie application
 
 ## Permissions Required
 
@@ -116,10 +150,17 @@ The extension requires the following permissions:
 BrowserExtension/
 ├── manifest.json      # Extension configuration
 ├── popup.html        # Interface HTML
-├── popup.css         # Interface styles
-├── popup.js          # Main logic
+├── popup.css         # Interface styles with modern button designs
+├── popup.js          # Main logic with auto-sync and domain validation
 └── README.md         # Documentation
 ```
+
+### Key Functions
+
+- `autoSyncCookieStates()` - Automatically syncs all saved cookie button states
+- `canApplyCookieToCurrentDomain()` - Validates cookie-domain compatibility
+- `updateToggleButtonState()` - Updates individual button appearance and state
+- `checkCookieInMap()` - Efficient cookie existence checking using Map lookup
 
 ### Debugging
 

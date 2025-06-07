@@ -206,12 +206,14 @@ button:hover {
   gap: 8px;
   overflow: hidden;
   word-wrap: break-word;
+  position: relative;
 }
 
 .cookie-info {
   width: 100%;
   overflow: hidden;
   min-width: 0;
+  padding-right: 35px; /* Space for delete button */
 }
 
 .cookie-name {
@@ -304,6 +306,30 @@ button:hover {
   background-color: #0056b3;
 }
 
+/* Cookie exists state - outline red button with "Remove" text */
+.toggle-btn-full.cookie-exists {
+  background-color: transparent;
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.toggle-btn-full.cookie-exists:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.toggle-btn.cookie-missing {
+  background-color: transparent;
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.toggle-btn.cookie-missing:hover {
+  background-color: #28a745;
+  color: white;
+}
+
 .check-btn {
   background-color: transparent;
   color: #007bff;
@@ -324,6 +350,12 @@ button:hover {
 
 .delete-btn:hover {
   background-color: #d32f2f;
+}
+
+#addCookieBtn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
 }
 
 /* Status message styles */
@@ -929,6 +961,76 @@ button:hover {
   top: -999999px !important;
   opacity: 0;
   pointer-events: none;
+}
+
+/* Delete button as icon in top-right corner */
+.delete-btn-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.delete-btn-icon:hover {
+  opacity: 1;
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+/* Full width toggle button */
+.toggle-btn-full {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 5px;
+}
+
+.toggle-btn-full:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+/* Cookie missing state - outline blue button with "Add" text */
+.toggle-btn-full.cookie-missing {
+  background-color: transparent;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.toggle-btn-full.cookie-missing:hover {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+/* Disabled state for domain mismatch */
+.toggle-btn-full.disabled,
+.toggle-btn-full:disabled {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.toggle-btn-full.disabled:hover,
+.toggle-btn-full:disabled:hover {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  color: #6c757d;
 }
 
  

@@ -26,4 +26,7 @@ build/
 
 # Personal settings
 .env
-.env.local 
+.env.local
+
+# Project-specific AI rules (keep local)
+.cursorrules

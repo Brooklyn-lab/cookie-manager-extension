@@ -497,6 +497,256 @@ document.addEventListener("DOMContentLoaded", function () {
       setTimeout(() => {
         autoSyncCookieStates();
       }, 100);
+
+      // Initialize drag and drop after cookies are loaded (only if there are cookies)
+      if (savedCookies.length > 1) {
+        setTimeout(() => {
+          initializeDragAndDrop();
+        }, 150);
+      }
+
+      // Update draggable state based on cookie count
+      updateDraggableState(savedCookies.length);
+    });
+  }
+
+  // Update draggable state based on number of cookies
+  function updateDraggableState(cookieCount) {
+    const cookieItems = document.querySelectorAll(".cookie-item");
+
+    cookieItems.forEach((item) => {
+      if (cookieCount > 1) {
+        // Enable dragging
+        item.draggable = true;
+        item.classList.add("draggable-enabled");
+        item.classList.remove("draggable-disabled");
+      } else {
+        // Disable dragging
+        item.draggable = false;
+        item.classList.add("draggable-disabled");
+        item.classList.remove("draggable-enabled");
+      }
+    });
+
+    // Update cookies list class for styling
+    if (cookieCount > 1) {
+      cookiesList.classList.add("multi-cookies");
+      cookiesList.classList.remove("single-cookie");
+    } else {
+      cookiesList.classList.add("single-cookie");
+      cookiesList.classList.remove("multi-cookies");
+    }
+
+    debugLog(
+      `Updated draggable state for ${cookieCount} cookies: ${
+        cookieCount > 1 ? "enabled" : "disabled"
+      }`,
+      "info"
+    );
+  }
+
+  // Initialize drag and drop functionality
+  function initializeDragAndDrop() {
+    let draggedElement = null;
+    let dragOverElement = null;
+
+    function handleDragStart(e) {
+      if (!e.target.classList.contains("cookie-item")) return;
+
+      draggedElement = e.target;
+      e.target.classList.add("dragging");
+      cookiesList.classList.add("dragging-active");
+
+      // Set drag data
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/html", e.target.outerHTML);
+
+      debugLog(`Started dragging cookie: ${e.target.dataset.id}`, "info");
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+
+      const afterElement = getDragAfterElement(cookiesList, e.clientY);
+      const dragging = document.querySelector(".dragging");
+
+      if (afterElement == null) {
+        cookiesList.appendChild(dragging);
+      } else {
+        cookiesList.insertBefore(dragging, afterElement);
+      }
+    }
+
+    function handleDragEnter(e) {
+      e.preventDefault();
+      if (
+        e.target.classList.contains("cookie-item") &&
+        e.target !== draggedElement
+      ) {
+        // Remove previous drag-over classes
+        document
+          .querySelectorAll(".drag-over, .drag-over-bottom")
+          .forEach((el) => {
+            el.classList.remove("drag-over", "drag-over-bottom");
+          });
+
+        dragOverElement = e.target;
+
+        // Determine if we should show border above or below
+        const rect = e.target.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const elementMiddle = rect.top + rect.height / 2;
+
+        if (mouseY < elementMiddle) {
+          e.target.classList.add("drag-over");
+        } else {
+          e.target.classList.add("drag-over-bottom");
+        }
+      }
+    }
+
+    function handleDragLeave(e) {
+      if (e.target.classList.contains("cookie-item")) {
+        e.target.classList.remove("drag-over", "drag-over-bottom");
+      }
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+
+      if (draggedElement) {
+        // Get the new order of cookie IDs
+        const cookieElements = Array.from(
+          cookiesList.querySelectorAll(".cookie-item")
+        );
+        const newOrder = cookieElements.map((el) => el.dataset.id);
+
+        // Update the order in storage
+        updateCookieOrder(newOrder);
+
+        debugLog(`Dropped cookie, new order: ${newOrder.join(", ")}`, "info");
+        showToast("✓ Cookie order updated", "success");
+      }
+
+      // Clean up
+      document
+        .querySelectorAll(".drag-over, .drag-over-bottom")
+        .forEach((el) => {
+          el.classList.remove("drag-over", "drag-over-bottom");
+        });
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove("dragging");
+      cookiesList.classList.remove("dragging-active");
+
+      // Clean up all drag classes
+      document
+        .querySelectorAll(".drag-over, .drag-over-bottom")
+        .forEach((el) => {
+          el.classList.remove("drag-over", "drag-over-bottom");
+        });
+
+      draggedElement = null;
+      dragOverElement = null;
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [
+        ...container.querySelectorAll(".cookie-item:not(.dragging)"),
+      ];
+
+      return draggableElements.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+          } else {
+            return closest;
+          }
+        },
+        { offset: Number.NEGATIVE_INFINITY }
+      ).element;
+    }
+
+    // Store function references for cleanup
+    if (!cookiesList._dragHandlers) {
+      cookiesList._dragHandlers = {
+        dragstart: handleDragStart,
+        dragover: handleDragOver,
+        dragenter: handleDragEnter,
+        dragleave: handleDragLeave,
+        drop: handleDrop,
+        dragend: handleDragEnd,
+      };
+    }
+
+    // Remove existing event listeners to prevent duplicates
+    Object.entries(cookiesList._dragHandlers).forEach(([event, handler]) => {
+      cookiesList.removeEventListener(event, handler);
+    });
+
+    // Add event listeners to cookies list
+    cookiesList.addEventListener("dragstart", handleDragStart);
+    cookiesList.addEventListener("dragover", handleDragOver);
+    cookiesList.addEventListener("dragenter", handleDragEnter);
+    cookiesList.addEventListener("dragleave", handleDragLeave);
+    cookiesList.addEventListener("drop", handleDrop);
+    cookiesList.addEventListener("dragend", handleDragEnd);
+
+    // Update stored handlers
+    cookiesList._dragHandlers = {
+      dragstart: handleDragStart,
+      dragover: handleDragOver,
+      dragenter: handleDragEnter,
+      dragleave: handleDragLeave,
+      drop: handleDrop,
+      dragend: handleDragEnd,
+    };
+  }
+
+  // Update cookie order in storage
+  function updateCookieOrder(newOrder) {
+    chrome.storage.local.get(["savedCookies"], function (result) {
+      if (chrome.runtime.lastError) {
+        debugLog(
+          `Error reading cookies for reorder: ${chrome.runtime.lastError.message}`,
+          "error"
+        );
+        return;
+      }
+
+      const savedCookies = result.savedCookies || [];
+
+      // Create a map for quick lookup
+      const cookieMap = new Map();
+      savedCookies.forEach((cookie) => {
+        cookieMap.set(cookie.id, cookie);
+      });
+
+      // Reorder cookies according to new order
+      const reorderedCookies = newOrder
+        .map((id) => cookieMap.get(id))
+        .filter((cookie) => cookie);
+
+      // Save the new order
+      chrome.storage.local.set({ savedCookies: reorderedCookies }, function () {
+        if (chrome.runtime.lastError) {
+          debugLog(
+            `Error saving reordered cookies: ${chrome.runtime.lastError.message}`,
+            "error"
+          );
+          showToast("❌ Failed to save cookie order", "error");
+        } else {
+          debugLog(
+            `Successfully reordered ${reorderedCookies.length} cookies`,
+            "info"
+          );
+        }
+      });
     });
   }
 
@@ -510,6 +760,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const cookieItem = document.createElement("div");
     cookieItem.className = "cookie-item";
     cookieItem.dataset.id = decryptedCookie.id;
+    // Draggable state will be set by updateDraggableState function
+
+    // Drag handle
+    const dragHandle = document.createElement("div");
+    dragHandle.className = "drag-handle";
+    dragHandle.innerHTML = "⋮⋮";
+    dragHandle.title = "Drag to reorder";
 
     // Delete button (trash icon) in top-right corner
     const deleteBtn = document.createElement("button");
@@ -581,6 +838,9 @@ document.addEventListener("DOMContentLoaded", function () {
     statusMessage.className = "cookie-status-message";
     statusMessage.id = `status-${decryptedCookie.id}`;
     cookieItem.appendChild(statusMessage);
+
+    // Add drag handle
+    cookieItem.appendChild(dragHandle);
 
     return cookieItem;
   }
@@ -957,6 +1217,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
           // No need for global status message as the deleted cookie will no longer be in the list
           // This prevents duplicate messages
         });
+
+        // Auto-sync cookie states after deletion
+        setTimeout(() => {
+          autoSyncCookieStates();
+        }, 200);
       } else {
         debugLog(`Cookie with ID ${cookieId} not found`, "error");
       }

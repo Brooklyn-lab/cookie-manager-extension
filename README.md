@@ -1,6 +1,6 @@
 # Cookie Manager Browser Extension
 
-A powerful Chrome extension for managing cookies and site data with automatic synchronization and smart domain validation.
+A powerful Chrome extension for managing cookies and site data with automatic synchronization, smart domain validation, and drag & drop reordering.
 
 ## Key Features
 
@@ -9,12 +9,23 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 - **Add new cookies** with customizable name, value, domain, path and expiration settings
 - **Global cookies** that work across all domains
 - **Save cookies** for future reuse across sessions
-- **Copy cookie names** with one click (click on cookie name)
+- **Copy cookie names and values** with one click (click on cookie name/value text)
+- **Drag & drop reordering** - intuitive cookie organization by dragging items
 - **Smart toggle buttons** that automatically sync with browser state
 - **Domain validation** - buttons show "Domain Mismatch" when cookies can't be applied to current site
 - **Auto-sync on startup** - button states automatically update when extension opens
 - **Real-time updates** - buttons sync when cookies are deleted from other parts of the extension
 - **Delete cookies** from your saved list
+
+### 🎯 Drag & Drop Features
+
+- **Visual drag handles** - appear on hover for easy identification
+- **Real-time reordering** - see changes as you drag
+- **Smart drop zones** - clear visual indicators where items can be dropped
+- **Persistent order** - reordered cookies saved automatically to storage
+- **Smooth animations** - polished drag experience with rotation and shadow effects
+- **Touch-friendly** - works on touch devices and trackpads
+- **Non-intrusive** - only activates when you have 2+ cookies to organize
 
 ### 🌐 Site Information
 
@@ -56,6 +67,7 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 - **Consistent design** - Add (blue) and Remove (red) buttons follow same interaction pattern
 - **Visual feedback** - clear distinction between available, unavailable, and disabled states
 - **Responsive interface** - adapts to different content sizes
+- **Optimized click zones** - copy functionality only activates on text, not entire blocks
 
 ## Installation
 
@@ -77,6 +89,14 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
    - Red "Remove" button (outline) = cookie exists, can be removed
    - Gray "Domain Mismatch" button = cookie can't be applied to current domain
 
+### Drag & Drop Cookie Reordering
+
+1. **Hover over any cookie** to see the drag handle (⋮⋮) appear on the left
+2. **Drag any cookie item** to reorder - grab anywhere on the cookie block
+3. **Visual feedback** shows where you can drop the item with blue borders
+4. **Automatic saving** - new order is saved to storage immediately
+5. **Success notification** confirms when reordering is complete
+
 ### Automatic Features
 
 - **Auto-sync on open**: Button states automatically update when you open the extension
@@ -94,7 +114,8 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 
 ### Copying Data
 
-- **Saved cookie names**: click on cookie name → automatic copying
+- **Saved cookie names**: click on cookie name text → automatic copying
+- **Saved cookie values**: click on value text → copy to clipboard
 - **Site cookies**: click on name or value → copy to clipboard
 - **Search results**: click on found cookie value → copying
 
@@ -102,25 +123,28 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 
 ### New Features
 
+- **Drag & Drop functionality**: HTML5 Drag and Drop API with visual feedback
 - **Optimized cookie checking**: Single API call instead of multiple individual checks
 - **Map-based lookup**: O(1) performance for cookie existence checks
 - **Automatic synchronization**: Buttons update when cookies are modified anywhere in the extension
 - **Domain compatibility**: Smart detection of cookie-domain compatibility
 - **Enhanced error handling**: Toast notifications replace persistent error messages
+- **Click zone optimization**: Precise click areas for copy functionality
 
 ### APIs Used
 
-- **Chrome Storage API** - saving cookie presets
+- **Chrome Storage API** - saving cookie presets and drag & drop order
 - **Chrome Cookies API** - managing cookies on websites with optimized batch operations
 - **Chrome Tabs API** - identifying current site
 - **Chrome BrowsingData API** - clearing site data
 - **Chrome Scripting API** - script injection for storage clearing
+- **HTML5 Drag and Drop API** - cookie reordering functionality
 
 ### Architecture
 
 - **Vanilla JavaScript** - no external dependencies
 - **Modular structure** - separated functions for different operations
-- **Event-driven** - using event delegation for dynamic content
+- **Event-driven** - using event delegation for dynamic content and drag & drop
 - **Responsive UI** - adaptive interface with animations
 - **Performance optimized** - batch API calls and efficient data structures
 
@@ -136,7 +160,7 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 The extension requires the following permissions:
 
 - `cookies` - for reading and managing cookies
-- `storage` - for saving settings
+- `storage` - for saving settings and cookie order
 - `activeTab` - for working with current tab
 - `scripting` - for clearing script injection
 - `browsingData` - for complete site data clearing
@@ -150,8 +174,8 @@ The extension requires the following permissions:
 BrowserExtension/
 ├── manifest.json      # Extension configuration
 ├── popup.html        # Interface HTML
-├── popup.css         # Interface styles with modern button designs
-├── popup.js          # Main logic with auto-sync and domain validation
+├── popup.css         # Interface styles with modern button designs and drag & drop
+├── popup.js          # Main logic with auto-sync, domain validation, and drag & drop
 └── README.md         # Documentation
 ```
 
@@ -161,6 +185,9 @@ BrowserExtension/
 - `canApplyCookieToCurrentDomain()` - Validates cookie-domain compatibility
 - `updateToggleButtonState()` - Updates individual button appearance and state
 - `checkCookieInMap()` - Efficient cookie existence checking using Map lookup
+- `initializeDragAndDrop()` - Sets up drag & drop functionality with event handlers
+- `updateCookieOrder()` - Saves new cookie order to storage after drag & drop
+- `handleDragStart/Over/Enter/Leave/Drop/End()` - Complete drag & drop event handling
 
 ### Debugging
 
@@ -168,6 +195,7 @@ BrowserExtension/
 2. Check console for errors
 3. Use `debugLog()` function for logging
 4. Check Chrome Extension DevTools
+5. Monitor drag & drop events in console
 
 ## Privacy
 

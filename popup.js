@@ -49,25 +49,69 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Function to scroll accordion into view
+  function scrollAccordionIntoView(accordionElement) {
+    setTimeout(() => {
+      // Reset any scroll behavior modifications from previous calls
+      const container = document.querySelector(".container");
+      if (container) {
+        container.style.scrollBehavior = "";
+      }
+
+      // Simple scroll without style manipulation
+      accordionElement.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
+  }
+
+  // Function to scroll add new cookie accordion - same approach as Saved cookies
+  function scrollAddCookieAccordionIntoView() {
+    setTimeout(() => {
+      // Use scrollIntoView with start block for stability
+      accordion.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "nearest",
+      });
+    }, 100);
+  }
+
   // Add accordion functionality for "Add new cookie"
   accordionHeader.addEventListener("click", function () {
     // Clear status message area when opening/closing accordion
     clearStatusMessage();
+    // Clear search results when interacting with accordion
+    clearSearchResult();
 
     // Get the content element
     const content = accordion.querySelector(".accordion-content");
     const isActive = accordion.classList.contains("active");
 
     if (isActive) {
-      // If closing the accordion, first fade out the content
-      const form = content.querySelector(".add-cookie-form");
-      form.style.opacity = "0";
+      // If closing the accordion, toggle active class immediately
+      accordion.classList.remove("active");
 
-      // After a short delay, toggle the active class
-      setTimeout(function () {
-        accordion.classList.remove("active");
-      }, 100);
+      // Clear any inline styles that might prevent closing
+      const form = content.querySelector(".add-cookie-form");
+      if (form) {
+        form.style.opacity = "";
+      }
     } else {
+      // Close the saved cookies accordion if it's open
+      if (savedCookiesAccordion.classList.contains("active")) {
+        savedCookiesAccordion.classList.remove("active");
+        const savedContent =
+          savedCookiesAccordion.querySelector(".accordion-content");
+        const savedInnerContent = savedContent.querySelector(
+          ".saved-cookies-content"
+        );
+        savedContent.style.maxHeight = "";
+        savedContent.style.padding = "";
+        savedInnerContent.style.opacity = "";
+      }
+
       // If opening, toggle class immediately
       accordion.classList.add("active");
 
@@ -83,13 +127,22 @@ document.addEventListener("DOMContentLoaded", function () {
           nameInput.focus();
         }
       }, 50);
+
+      // Scroll accordion into view when opening
+      scrollAddCookieAccordionIntoView();
     }
   });
 
   // Add accordion functionality for "Saved cookies"
   savedCookiesHeader.addEventListener("click", function () {
-    // Clear status message area when opening/closing accordion
-    clearStatusMessage();
+    // Clear search results when interacting with accordion
+    clearSearchResult();
+
+    // Clear status message only if it contains site cookies info
+    const statusMsg = document.getElementById("status-message");
+    if (statusMsg && statusMsg.querySelector(".site-cookies-container")) {
+      clearStatusMessage();
+    }
 
     // Get the content element
     const content = savedCookiesAccordion.querySelector(".accordion-content");
@@ -97,17 +150,33 @@ document.addEventListener("DOMContentLoaded", function () {
     const savedContent = content.querySelector(".saved-cookies-content");
 
     if (isActive) {
-      // If closing the accordion, first fade out the content
-      savedContent.style.opacity = "0";
+      // If closing the accordion, toggle active class immediately
+      savedCookiesAccordion.classList.remove("active");
 
-      // After a short delay, toggle the active class
-      setTimeout(function () {
-        savedCookiesAccordion.classList.remove("active");
-        // Reset max-height to ensure proper animation
-        content.style.maxHeight = "0";
-        content.style.padding = "0 15px";
-      }, 200);
+      // Clear any inline styles that might prevent closing
+      content.style.maxHeight = "";
+      content.style.padding = "";
+      savedContent.style.opacity = "";
+
+      // Reset any scroll behavior modifications
+      const container = document.querySelector(".container");
+      if (container) {
+        container.style.scrollBehavior = "";
+      }
+
+      // Clear status message after closing
+      clearStatusMessage();
     } else {
+      // Close the add cookie accordion if it's open
+      if (accordion.classList.contains("active")) {
+        accordion.classList.remove("active");
+        const addContent = accordion.querySelector(".accordion-content");
+        const addForm = addContent.querySelector(".add-cookie-form");
+        if (addForm) {
+          addForm.style.opacity = "";
+        }
+      }
+
       // If opening, toggle class immediately
       savedCookiesAccordion.classList.add("active");
 
@@ -119,12 +188,27 @@ document.addEventListener("DOMContentLoaded", function () {
       setTimeout(function () {
         savedContent.style.opacity = "1";
       }, 100);
+
+      // Scroll accordion into view when opening - stable approach
+      setTimeout(() => {
+        // Use window.scrollTo for precise positioning
+        const accordionTop = savedCookiesAccordion.offsetTop;
+        const offset = Math.max(0, accordionTop - 50); // 50px offset from top for better visibility
+
+        window.scrollTo({
+          top: offset,
+          behavior: "smooth",
+        });
+      }, 200);
     }
   });
 
   // Function for logging with status display
   function debugLog(message, type = "info") {
-    console.log(`[DEBUG] ${message}`);
+    // Only log to console in debug mode
+    if (DEBUG_MODE) {
+      console.log(`[DEBUG] ${message}`);
+    }
 
     // List of messages that should never be shown in the UI
     if (
@@ -230,6 +314,8 @@ document.addEventListener("DOMContentLoaded", function () {
   addCookieBtn.addEventListener("click", function () {
     // Clear previous validation messages
     clearFormValidation();
+    // Clear search results when adding new cookie
+    clearSearchResult();
 
     const name = cookieNameInput.value.trim();
     const value = cookieValueInput.value.trim();
@@ -465,6 +551,9 @@ document.addEventListener("DOMContentLoaded", function () {
               nameInput.focus();
             }
           }, 50);
+
+          // Scroll accordion into view when opening programmatically
+          scrollAddCookieAccordionIntoView();
         }
 
         return;
@@ -484,6 +573,9 @@ document.addEventListener("DOMContentLoaded", function () {
         setTimeout(function () {
           savedContent.style.opacity = "1";
         }, 100);
+
+        // Scroll accordion into view when opening programmatically
+        scrollAccordionIntoView(savedCookiesAccordion);
       }
 
       // Close the add cookie form only when first loading saved cookies
@@ -1496,6 +1588,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Handler for opening DevTools
   openDevToolsBtn.addEventListener("click", function () {
+    // Clear search results when interacting with footer buttons
+    clearSearchResult();
+
     // Check if cookie info is already visible
     if (
       statusMessage.style.display === "block" &&
@@ -1533,6 +1628,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Handler for clearing all cookies on current tab
   clearAllCookiesBtn.addEventListener("click", function () {
+    // Clear search results when interacting with footer buttons
+    clearSearchResult();
+
     // Close all accordions and clear status
     closeAllAccordions();
 
@@ -1555,6 +1653,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Handler for clearing all site data (storage + cookies)
   clearAllDataBtn.addEventListener("click", function () {
+    // Clear search results when interacting with footer buttons
+    clearSearchResult();
+
     // Close all accordions and clear status
     closeAllAccordions();
 
@@ -1583,14 +1684,42 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   const importCookiesBtn = document.getElementById("importCookiesBtn");
   const importFileInput = document.getElementById("importFileInput");
 
+  // Track last search term to avoid duplicate searches
+  let lastSearchTerm = "";
+  let lastNotFoundTerm = "";
+
+  // Debug mode flag - set to false for production
+  const DEBUG_MODE = false;
+
   searchCookieBtn.addEventListener("click", function () {
-    // Always close saved cookies accordion when focusing on search
-    closeSavedCookiesAccordion();
+    // Always close all accordions when clicking search
+    closeAllAccordions();
 
     const cookieName = cookieSearchInput.value.trim();
     if (cookieName) {
+      // Check if this is the same search term as last time AND results are visible
+      const searchResult = document.getElementById("search-result");
+      const hasVisibleResults = searchResult.innerHTML.trim() !== "";
+
+      if (cookieName === lastSearchTerm && hasVisibleResults) {
+        // Don't perform duplicate search if results are already visible
+        return;
+      }
+
+      if (cookieName === lastNotFoundTerm) {
+        // Show toast for previously not found cookie without any search UI
+        showToast(
+          `Cookies containing "${breakLongString(
+            cookieName
+          )}" not found on current site or related domains`,
+          "error"
+        );
+        return;
+      }
+
       // Remove error state if exists
       cookieSearchInput.classList.remove("search-input-error");
+      lastSearchTerm = cookieName; // Update last search term
       searchCookieOnCurrentSite(cookieName);
     } else {
       // Add error state and focus input
@@ -1608,13 +1737,34 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   // Allow search on Enter key
   cookieSearchInput.addEventListener("keypress", function (event) {
     if (event.key === "Enter") {
-      // Always close saved cookies accordion when focusing on search
-      closeSavedCookiesAccordion();
+      // Always close all accordions when pressing Enter on search
+      closeAllAccordions();
 
       const cookieName = event.target.value.trim();
       if (cookieName) {
+        // Check if this is the same search term as last time AND results are visible
+        const searchResult = document.getElementById("search-result");
+        const hasVisibleResults = searchResult.innerHTML.trim() !== "";
+
+        if (cookieName === lastSearchTerm && hasVisibleResults) {
+          // Don't perform duplicate search if results are already visible
+          return;
+        }
+
+        if (cookieName === lastNotFoundTerm) {
+          // Show toast for previously not found cookie without any search UI
+          showToast(
+            `Cookies containing "${breakLongString(
+              cookieName
+            )}" not found on current site or related domains`,
+            "error"
+          );
+          return;
+        }
+
         // Remove error state if exists
         cookieSearchInput.classList.remove("search-input-error");
+        lastSearchTerm = cookieName; // Update last search term
         searchCookieOnCurrentSite(cookieName);
       } else {
         // Add error state
@@ -1634,6 +1784,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     if (cookieSearchInput.classList.contains("search-input-error")) {
       cookieSearchInput.classList.remove("search-input-error");
     }
+    // Reset last search term when user modifies input
+    lastSearchTerm = "";
+    lastNotFoundTerm = "";
   });
 
   // Event delegation for clicking on cookie values in search results
@@ -2119,6 +2272,14 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       statusMessage.appendChild(cookiesContainer);
       statusMessage.className = "info";
       statusMessage.style.display = "block";
+
+      // Scroll to the site cookies section after it's displayed
+      setTimeout(() => {
+        statusMessage.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
     });
   }
 
@@ -2273,6 +2434,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     const protocols = ["https", "http"];
     let removalAttempts = 0;
     let successfulRemoval = false;
+    let hasShownMessage = false; // Prevent duplicate messages
 
     function attemptRemoval(protocol) {
       const cookieDetails = {
@@ -2283,10 +2445,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       chrome.cookies.remove(cookieDetails, function (result) {
         removalAttempts++;
 
-        if (result) {
+        if (result && !hasShownMessage) {
           successfulRemoval = true;
+          hasShownMessage = true;
           showToast(`✓ Cookie "${cookieName}" deleted successfully`, "success");
-          clearSearchResult();
+
+          // Remove only this specific cookie from search results
+          removeSearchResultItem(cookieName, cookieDomain, cookiePath);
 
           // Sync saved cookie buttons after cookie deletion
           setTimeout(() => {
@@ -2297,7 +2462,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         }
 
         // If both attempts are done and none successful
-        if (removalAttempts >= protocols.length && !successfulRemoval) {
+        if (
+          removalAttempts >= protocols.length &&
+          !successfulRemoval &&
+          !hasShownMessage
+        ) {
+          hasShownMessage = true;
           if (chrome.runtime.lastError) {
             showToast(
               `❌ Error deleting cookie "${cookieName}": ${chrome.runtime.lastError.message}`,
@@ -2386,6 +2556,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
             nameInput.focus();
           }
         }, 50);
+
+        // Scroll accordion into view when opening for validation errors
+        scrollAddCookieAccordionIntoView();
       }
     }
 
@@ -2401,17 +2574,15 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   // Function to close saved cookies accordion
   function closeSavedCookiesAccordion() {
     if (savedCookiesAccordion.classList.contains("active")) {
+      // Close accordion immediately
+      savedCookiesAccordion.classList.remove("active");
+
+      // Clear any inline styles that might prevent closing
       const content = savedCookiesAccordion.querySelector(".accordion-content");
-      const savedContent = content.querySelector(".saved-cookies-content");
-
-      // Animate content opacity
-      savedContent.style.opacity = "0";
-
-      setTimeout(function () {
-        savedCookiesAccordion.classList.remove("active");
-        content.style.maxHeight = "0";
-        content.style.padding = "0 15px";
-      }, 200);
+      if (content) {
+        content.style.maxHeight = "";
+        content.style.padding = "";
+      }
     }
   }
 
@@ -2422,26 +2593,33 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
     // Close the Add new cookie accordion if it's open
     if (accordion.classList.contains("active")) {
-      const content = accordion.querySelector(".accordion-content");
-      const form = content.querySelector(".add-cookie-form");
-      form.style.opacity = "0";
+      accordion.classList.remove("active");
 
-      setTimeout(function () {
-        accordion.classList.remove("active");
-      }, 100);
+      // Clear any inline styles for add cookie form
+      const content = accordion.querySelector(".accordion-content");
+      if (content) {
+        const form = content.querySelector(".add-cookie-form");
+        if (form) {
+          form.style.opacity = "";
+        }
+      }
     }
 
     // Close the Saved cookies accordion if it's open
     if (savedCookiesAccordion.classList.contains("active")) {
-      const content = savedCookiesAccordion.querySelector(".accordion-content");
-      const savedContent = content.querySelector(".saved-cookies-content");
-      savedContent.style.opacity = "0";
+      savedCookiesAccordion.classList.remove("active");
 
-      setTimeout(function () {
-        savedCookiesAccordion.classList.remove("active");
-        content.style.maxHeight = "0";
-        content.style.padding = "0 15px";
-      }, 200);
+      // Clear any inline styles for saved cookies accordion
+      const content = savedCookiesAccordion.querySelector(".accordion-content");
+      if (content) {
+        content.style.maxHeight = "";
+        content.style.padding = "";
+
+        const savedContent = content.querySelector(".saved-cookies-content");
+        if (savedContent) {
+          savedContent.style.opacity = "";
+        }
+      }
     }
   }
 
@@ -2571,11 +2749,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       return;
     }
 
-    // Show searching status
+    // Show searching status - will be updated or cleared based on results
     showSearchResult(
-      `Searching for cookies containing "${breakLongString(
-        cookieName
-      )}" on current site...`,
+      `Searching for cookies containing "${breakLongString(cookieName)}"...`,
       "searching"
     );
 
@@ -2634,10 +2810,14 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
               return;
             }
 
-            // Filter cookies that contain the search term
-            const matchingCookies = cookies.filter((cookie) =>
-              cookie.name.toLowerCase().includes(searchTerm)
-            );
+            // Filter cookies that contain the search term OR where search term contains cookie name
+            const matchingCookies = cookies.filter((cookie) => {
+              const cookieName = cookie.name.toLowerCase();
+              return (
+                cookieName.includes(searchTerm) ||
+                searchTerm.includes(cookieName)
+              );
+            });
 
             if (matchingCookies.length > 0) {
               // Cookies found
@@ -2713,6 +2893,14 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   function searchCookieAllDomains(cookieName, currentDomain, currentUrl) {
     const searchTerm = cookieName.toLowerCase().trim();
 
+    // Update existing search status to show we're checking variations
+    showSearchResult(
+      `Searching for cookies containing "${breakLongString(
+        cookieName
+      )}" in related domains...`,
+      "searching"
+    );
+
     // Try different domain variations
     const domainVariations = [
       currentDomain,
@@ -2746,6 +2934,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         );
         clearSearchResult();
         searchCompleted = true;
+
+        // Remember this term as not found to avoid future UI searches
+        lastNotFoundTerm = cookieName;
       }
     }, 8000);
 
@@ -2765,10 +2956,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
           if (searchCompleted) return; // Prevent multiple results
 
-          // Filter cookies that contain the search term
-          const matchingCookies = cookies.filter((cookie) =>
-            cookie.name.toLowerCase().includes(searchTerm)
-          );
+          // Filter cookies that contain the search term OR where search term contains cookie name
+          const matchingCookies = cookies.filter((cookie) => {
+            const cookieName = cookie.name.toLowerCase();
+            return (
+              cookieName.includes(searchTerm) || searchTerm.includes(cookieName)
+            );
+          });
 
           if (matchingCookies.length > 0) {
             foundCookies.push(...matchingCookies);
@@ -2841,6 +3035,9 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
               "error"
             );
             clearSearchResult();
+
+            // Remember this term as not found to avoid future UI searches
+            lastNotFoundTerm = cookieName;
           }
         }
       );
@@ -2990,6 +3187,67 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       clearTimeout(searchResult.hideTimer);
       searchResult.hideTimer = null;
     }
+
+    // Don't reset lastSearchTerm here - keep it to prevent duplicate searches
+  }
+
+  // Function to remove specific search result item
+  function removeSearchResultItem(cookieName, cookieDomain, cookiePath) {
+    const searchResult = document.getElementById("search-result");
+
+    // Find the specific search result item to remove
+    const resultItems = searchResult.querySelectorAll(".search-result-item");
+
+    resultItems.forEach((item) => {
+      const deleteBtn = item.querySelector(".search-cookie-delete-btn");
+      if (deleteBtn) {
+        const itemCookieName = deleteBtn.getAttribute("data-cookie-name");
+        const itemCookieDomain = deleteBtn.getAttribute("data-cookie-domain");
+        const itemCookiePath = deleteBtn.getAttribute("data-cookie-path");
+
+        if (
+          itemCookieName === cookieName &&
+          itemCookieDomain === cookieDomain &&
+          itemCookiePath === cookiePath
+        ) {
+          // Remove this specific item
+          item.remove();
+
+          // Check if there are remaining results
+          const remainingItems = searchResult.querySelectorAll(
+            ".search-result-item"
+          );
+
+          if (remainingItems.length === 0) {
+            // No more results - close the search window
+            clearSearchResult();
+          } else {
+            // Update the header count
+            const contentDiv = searchResult.querySelector(
+              ".search-result-header"
+            ).nextElementSibling;
+            const header = contentDiv.querySelector(
+              ".search-cookie-header strong"
+            );
+            if (header) {
+              const currentText = header.textContent;
+              // Check if it has domain-specific text
+              const domainMatch = currentText.match(
+                /Found \d+ cookie\(s\) on (.+):/
+              );
+              if (domainMatch) {
+                // Keep the domain info
+                header.textContent = `Found ${remainingItems.length} cookie(s) on ${domainMatch[1]}:`;
+              } else {
+                // Regular format without domain
+                header.textContent = `Found ${remainingItems.length} cookie(s):`;
+              }
+            }
+          }
+          return;
+        }
+      }
+    });
   }
 
   // Function to show search results
@@ -3002,32 +3260,48 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       searchResult.hideTimer = null;
     }
 
-    searchResult.innerHTML = message;
+    // Create header with close button
+    const headerDiv = document.createElement("div");
+    headerDiv.className = "search-result-header";
+
+    const titleSpan = document.createElement("span");
+    titleSpan.style.fontWeight = "bold";
+
+    // Set title based on the type
+    if (type === "searching") {
+      titleSpan.textContent = "Searching...";
+    } else if (type === "found") {
+      titleSpan.textContent = "Search Results";
+    } else if (type === "error") {
+      titleSpan.textContent = "Error";
+    } else {
+      titleSpan.textContent = "Results";
+    }
+
+    const closeButton = document.createElement("button");
+    closeButton.className = "search-result-close";
+    closeButton.innerHTML = "×";
+    closeButton.title = "Close search results";
+    closeButton.addEventListener("click", clearSearchResult);
+
+    headerDiv.appendChild(titleSpan);
+    headerDiv.appendChild(closeButton);
+
+    // Create content div
+    const contentDiv = document.createElement("div");
+    contentDiv.innerHTML = message;
+
+    // Clear and add structured content
+    searchResult.innerHTML = "";
+    searchResult.appendChild(headerDiv);
+    searchResult.appendChild(contentDiv);
     searchResult.className = `search-result ${type}`;
 
-    debugLog(`Search result: ${type} - ${message}`, "info");
+    // Don't log HTML content to console - only log the search type
+    debugLog(`Search result: ${type}`, "info");
 
-    // Auto-hide after 8 seconds for success messages
-    if (type === "found") {
-      searchResult.hideTimer = setTimeout(() => {
-        clearSearchResult();
-      }, 8000);
-    }
-
-    // Auto-hide error and not-found messages after 5 seconds
-    if (type === "error" || type === "not-found") {
-      searchResult.hideTimer = setTimeout(() => {
-        clearSearchResult();
-      }, 5000);
-    }
-
-    // Auto-hide searching status after 10 seconds (as fallback)
-    if (type === "searching") {
-      searchResult.hideTimer = setTimeout(() => {
-        showToast("Search timed out", "error");
-        clearSearchResult();
-      }, 10000);
-    }
+    // No auto-hide timers - only clear on user interaction
+    // Results stay visible until user takes an action
   }
 
   // Function to automatically sync cookie states (optimized)

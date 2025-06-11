@@ -1,0 +1,46 @@
+# Cookie Manager Extension - Cursor Rules
+
+## Language Guidelines
+
+- **Code comments**: ENGLISH ONLY
+- **Documentation files**: ENGLISH ONLY (README, docs, etc.)
+- **Variable/function names**: English, camelCase for JS, kebab-case for CSS
+- **Console logs**: English only
+
+## Code Style
+
+- Use clear, descriptive comments for complex logic
+- Follow established patterns in the codebase
+- Maintain consistent indentation (2 spaces)
+- Keep functions focused and well-documented
+
+## Commit Message Format
+
+- **Max 70 characters**
+- **Format**: `type: brief description`
+- **Types**: feat, fix, refactor, style, docs
+- **Examples**:
+  - `feat: add cookie search close button`
+  - `fix: prevent duplicate delete messages`
+  - `refactor: improve accordion scroll logic`
+
+## Documentation
+
+- Keep README.md updated with new features
+- Document complex functions with JSDoc
+- Include usage examples for new functionality
+- Maintain changelog for significant updates
+
+## File Structure
+
+- Keep CSS organized by component sections
+- Group related JS functions together
+- Use meaningful file and folder names
+- Maintain clean separation of concerns
+
+## Focus Areas
+
+- Prioritize core cookie management functionality
+- Ensure browser extension compatibility
+- Maintain clean, user-friendly interface
+- Optimize for performance and reliability

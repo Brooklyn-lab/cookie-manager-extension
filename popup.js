@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
   accordionHeader.addEventListener("click", function () {
     // Clear status message area when opening/closing accordion
     clearStatusMessage();
-    // Clear search results when interacting with accordion
+    // Clear search results when clicking accordion
     clearSearchResult();
 
     // Get the content element
@@ -99,17 +99,17 @@ document.addEventListener("DOMContentLoaded", function () {
         form.style.opacity = "";
       }
     } else {
-      // Close the saved cookies accordion if it's open
+      // Close other accordion first
       if (savedCookiesAccordion.classList.contains("active")) {
         savedCookiesAccordion.classList.remove("active");
-        const savedContent =
+        const otherContent =
           savedCookiesAccordion.querySelector(".accordion-content");
-        const savedInnerContent = savedContent.querySelector(
+        const otherSavedContent = otherContent.querySelector(
           ".saved-cookies-content"
         );
-        savedContent.style.maxHeight = "";
-        savedContent.style.padding = "";
-        savedInnerContent.style.opacity = "";
+        otherSavedContent.style.opacity = "0";
+        otherContent.style.maxHeight = "0";
+        otherContent.style.padding = "0 15px";
       }
 
       // If opening, toggle class immediately
@@ -135,14 +135,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Add accordion functionality for "Saved cookies"
   savedCookiesHeader.addEventListener("click", function () {
-    // Clear search results when interacting with accordion
+    // Clear status message area when opening/closing accordion
+    clearStatusMessage();
+    // Clear search results when clicking accordion
     clearSearchResult();
-
-    // Clear status message only if it contains site cookies info
-    const statusMsg = document.getElementById("status-message");
-    if (statusMsg && statusMsg.querySelector(".site-cookies-container")) {
-      clearStatusMessage();
-    }
 
     // Get the content element
     const content = savedCookiesAccordion.querySelector(".accordion-content");
@@ -167,14 +163,12 @@ document.addEventListener("DOMContentLoaded", function () {
       // Clear status message after closing
       clearStatusMessage();
     } else {
-      // Close the add cookie accordion if it's open
+      // Close other accordion first
       if (accordion.classList.contains("active")) {
         accordion.classList.remove("active");
-        const addContent = accordion.querySelector(".accordion-content");
-        const addForm = addContent.querySelector(".add-cookie-form");
-        if (addForm) {
-          addForm.style.opacity = "";
-        }
+        const otherContent = accordion.querySelector(".accordion-content");
+        const otherForm = otherContent.querySelector(".add-cookie-form");
+        otherForm.style.opacity = "0";
       }
 
       // If opening, toggle class immediately
@@ -1588,7 +1582,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Handler for opening DevTools
   openDevToolsBtn.addEventListener("click", function () {
-    // Clear search results when interacting with footer buttons
+    // Clear search results when clicking footer button
     clearSearchResult();
 
     // Check if cookie info is already visible
@@ -1628,9 +1622,8 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Handler for clearing all cookies on current tab
   clearAllCookiesBtn.addEventListener("click", function () {
-    // Clear search results when interacting with footer buttons
+    // Clear search results when clicking footer button
     clearSearchResult();
-
     // Close all accordions and clear status
     closeAllAccordions();
 
@@ -1653,9 +1646,8 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
   // Handler for clearing all site data (storage + cookies)
   clearAllDataBtn.addEventListener("click", function () {
-    // Clear search results when interacting with footer buttons
+    // Clear search results when clicking footer button
     clearSearchResult();
-
     // Close all accordions and clear status
     closeAllAccordions();
 
@@ -1692,7 +1684,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   const DEBUG_MODE = false;
 
   searchCookieBtn.addEventListener("click", function () {
-    // Always close all accordions when clicking search
+    // Always close all accordions when focusing on search
     closeAllAccordions();
 
     const cookieName = cookieSearchInput.value.trim();
@@ -1727,6 +1719,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       cookieSearchInput.focus();
       showToast("Please enter a cookie name to search", "error");
 
+      // Clear search results and cache when validation fails
+      clearSearchResult();
+      lastSearchQuery = null;
+      lastSearchDomain = null;
+      lastSearchResult = null;
+
       // Remove error state after 3 seconds
       setTimeout(() => {
         cookieSearchInput.classList.remove("search-input-error");
@@ -1737,7 +1735,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
   // Allow search on Enter key
   cookieSearchInput.addEventListener("keypress", function (event) {
     if (event.key === "Enter") {
-      // Always close all accordions when pressing Enter on search
+      // Always close all accordions when focusing on search
       closeAllAccordions();
 
       const cookieName = event.target.value.trim();
@@ -1771,6 +1769,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         cookieSearchInput.classList.add("search-input-error");
         showToast("Please enter a cookie name to search", "error");
 
+        // Clear search results and cache when validation fails
+        clearSearchResult();
+        lastSearchQuery = null;
+        lastSearchDomain = null;
+        lastSearchResult = null;
+
         // Remove error state after 3 seconds
         setTimeout(() => {
           cookieSearchInput.classList.remove("search-input-error");
@@ -1784,9 +1788,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     if (cookieSearchInput.classList.contains("search-input-error")) {
       cookieSearchInput.classList.remove("search-input-error");
     }
-    // Reset last search term when user modifies input
-    lastSearchTerm = "";
-    lastNotFoundTerm = "";
+
+    // Clear search cache when user modifies input
+    lastSearchQuery = null;
+    lastSearchDomain = null;
+    lastSearchResult = null;
   });
 
   // Event delegation for clicking on cookie values in search results
@@ -2434,7 +2440,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     const protocols = ["https", "http"];
     let removalAttempts = 0;
     let successfulRemoval = false;
-    let hasShownMessage = false; // Prevent duplicate messages
+    let toastShown = false; // Flag to prevent duplicate toasts
 
     function attemptRemoval(protocol) {
       const cookieDetails = {
@@ -2445,20 +2451,47 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       chrome.cookies.remove(cookieDetails, function (result) {
         removalAttempts++;
 
-        if (result && !hasShownMessage) {
+        if (result && !toastShown) {
           successfulRemoval = true;
-          hasShownMessage = true;
+          toastShown = true; // Set flag to prevent duplicate toasts
           showToast(`✓ Cookie "${cookieName}" deleted successfully`, "success");
 
-          // Remove only this specific cookie from search results
-          removeSearchResultItem(cookieName, cookieDomain, cookiePath);
+          // Remove the deleted cookie element from search results
+          const searchResult = document.getElementById("search-result");
+          const cookieItems = searchResult.querySelectorAll(
+            ".search-result-item"
+          );
+          cookieItems.forEach((item) => {
+            const deleteBtn = item.querySelector(".search-cookie-delete-btn");
+            if (
+              deleteBtn &&
+              deleteBtn.getAttribute("data-cookie-name") === cookieName &&
+              deleteBtn.getAttribute("data-cookie-domain") === cookieDomain &&
+              deleteBtn.getAttribute("data-cookie-path") === cookiePath
+            ) {
+              item.remove();
+            }
+          });
+
+          // Check if any results remain, if not - clear the entire search result
+          if (!hasSearchResults()) {
+            clearSearchResult();
+          }
 
           // Sync saved cookie buttons after cookie deletion
           setTimeout(() => {
             autoSyncCookieStates();
           }, 200);
 
+          // Clear search cache since results may have changed
+          lastSearchQuery = null;
+          lastSearchDomain = null;
+          lastSearchResult = null;
+
           return;
+        } else if (result) {
+          // Cookie was removed but toast already shown
+          successfulRemoval = true;
         }
 
         // If both attempts are done and none successful
@@ -2738,25 +2771,27 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     return result;
   }
 
+  // Search cache variables
+  let lastSearchQuery = null;
+  let lastSearchDomain = null;
+  let lastSearchResult = null;
+
   // Function to search for a specific cookie on current site
   function searchCookieOnCurrentSite(cookieName) {
-    // Clear previous results
-    clearSearchResult();
-
     // Validate that search term is not empty
     if (!cookieName || cookieName.trim() === "") {
       showToast("Please enter a cookie name to search", "error");
+      clearSearchResult(); // Clear old results when validation fails
+      // Clear cache to prevent stale results
+      lastSearchQuery = null;
+      lastSearchDomain = null;
+      lastSearchResult = null;
       return;
     }
 
-    // Show searching status - will be updated or cleared based on results
-    showSearchResult(
-      `Searching for cookies containing "${breakLongString(cookieName)}"...`,
-      "searching"
-    );
-
     const searchTerm = cookieName.toLowerCase().trim();
 
+    // Get current domain for cache comparison
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (!tabs[0] || !tabs[0].url) {
         showToast("No active tab to search cookie", "error");
@@ -2767,126 +2802,193 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       try {
         const urlObj = new URL(tabs[0].url);
         const domain = urlObj.hostname;
-        const url = tabs[0].url;
 
-        debugLog(
-          `Searching for cookies containing "${cookieName}" on ${domain}`,
-          "info"
-        );
+        // Check if we have cached result for same query and domain
+        if (
+          lastSearchQuery === searchTerm &&
+          lastSearchDomain === domain &&
+          lastSearchResult !== null
+        ) {
+          // debugLog(`Using cached search result for "${cookieName}" on ${domain}`, "info"); // Removed to avoid console clutter
 
-        // Search using chrome.cookies API with timeout protection
-        let searchCompleted = false;
+          // Check if current displayed content is different from cached
+          const searchResult = document.getElementById("search-result");
+          const currentContent = searchResult.innerHTML;
+          const currentType = searchResult.className.replace(
+            "search-result ",
+            ""
+          );
+          const isCurrentlyVisible =
+            window.getComputedStyle(searchResult).display !== "none";
 
-        // Set a timeout for the search
-        const searchTimeout = setTimeout(() => {
-          if (!searchCompleted) {
-            debugLog(`Cookie search timed out for ${cookieName}`, "error");
+          // More robust content comparison - normalize whitespace and check key elements
+          const normalizedCurrent = currentContent.replace(/\s+/g, " ").trim();
+          const normalizedCached = lastSearchResult.content
+            .replace(/\s+/g, " ")
+            .trim();
+          const contentChanged = normalizedCurrent !== normalizedCached;
+
+          // Handle cached "not found" result - show toast only, no search UI
+          if (lastSearchResult.type === "not-found") {
             showToast(
-              `Search timed out for cookie "${breakLongString(cookieName)}"`,
+              `Cookies containing "${breakLongString(
+                cookieName
+              )}" not found on current site or related domains`,
               "error"
             );
             clearSearchResult();
+            return;
           }
-        }, 5000);
 
-        chrome.cookies.getAll(
-          {
-            url: url,
-          },
-          function (cookies) {
-            searchCompleted = true;
-            clearTimeout(searchTimeout);
-
-            if (chrome.runtime.lastError) {
-              debugLog(
-                `Chrome cookies API error: ${chrome.runtime.lastError.message}`,
-                "error"
-              );
-              showToast(
-                `Error searching cookie: ${chrome.runtime.lastError.message}`,
-                "error"
-              );
-              clearSearchResult();
-              return;
-            }
-
-            // Filter cookies that contain the search term OR where search term contains cookie name
-            const matchingCookies = cookies.filter((cookie) => {
-              const cookieName = cookie.name.toLowerCase();
-              return (
-                cookieName.includes(searchTerm) ||
-                searchTerm.includes(cookieName)
-              );
-            });
-
-            if (matchingCookies.length > 0) {
-              // Cookies found
-              debugLog(
-                `${matchingCookies.length} cookie(s) found containing "${cookieName}"`,
-                "info"
-              );
-
-              let cookiesInfo = `<div class="search-cookie-header"><strong>Found ${matchingCookies.length} cookie(s):</strong></div>`;
-
-              matchingCookies.forEach((cookie, index) => {
-                cookiesInfo += `
-                  <div class="search-result-item">
-                    <div class="search-cookie-header">
-                      <div class="search-name-value">
-                        <strong>Name:</strong> <span class="clickable-name" data-cookie-name="${cookie.name.replace(
-                          /"/g,
-                          "&quot;"
-                        )}" title="Click to copy name">${breakLongString(
-                  cookie.name
-                )}</span><br>
-                        <strong>Value:</strong> <span class="clickable-value" data-full-value="${cookie.value.replace(
-                          /"/g,
-                          "&quot;"
-                        )}" title="Click to copy value">${
-                  cookie.value.length > 50
-                    ? breakLongString(cookie.value.substring(0, 50)) + "..."
-                    : breakLongString(cookie.value)
-                }</span>
-                      </div>
-                      <button class="search-cookie-delete-btn" data-cookie-name="${cookie.name.replace(
-                        /"/g,
-                        "&quot;"
-                      )}" data-cookie-domain="${
-                  cookie.domain
-                }" data-cookie-path="${
-                  cookie.path
-                }" title="Delete this cookie"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="#dc3545"><path d="M5 7v19c0 1.326.527 2.598 1.464 3.536A5.004 5.004 0 0 0 10 31h12a5.004 5.004 0 0 0 3.536-1.464A5.004 5.004 0 0 0 27 26V7h3a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h3Zm20 0v19c0 .796-.316 1.559-.879 2.121A2.996 2.996 0 0 1 22 29H10a2.996 2.996 0 0 1-2.121-.879A2.996 2.996 0 0 1 7 26V7h18ZM11 3h10a1 1 0 0 0 0-2H11a1 1 0 0 0 0 2Z"/><path d="M12 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0ZM18 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0Z"/></svg></button>
-                    </div>
-                    <div class="cookie-details-search">
-                      <strong>Domain:</strong> ${cookie.domain}<br>
-                      <strong>Path:</strong> ${cookie.path}<br>
-                      <strong>Secure:</strong> ${
-                        cookie.secure ? "Yes" : "No"
-                      }<br>
-                      <strong>HttpOnly:</strong> ${
-                        cookie.httpOnly ? "Yes" : "No"
-                      }
-                    </div>
-                  </div>
-                `;
-              });
-
-              showSearchResult(cookiesInfo, "found");
-            } else {
-              // No cookies found - check if it might exist with different domains
-              debugLog(
-                `No cookies containing "${cookieName}" found on primary domain, checking variations...`,
-                "info"
-              );
-              searchCookieAllDomains(cookieName, domain, url);
-            }
+          // Only update if content, type, or visibility state actually changed to avoid layout shift
+          if (
+            contentChanged ||
+            currentType !== lastSearchResult.type ||
+            !isCurrentlyVisible
+          ) {
+            showSearchResult(lastSearchResult.content, lastSearchResult.type);
           }
-        );
+          return;
+        }
+
+        // Clear previous results and proceed with new search
+        clearSearchResult();
+        performNewSearch(cookieName, searchTerm, domain, tabs[0].url);
       } catch (e) {
         showToast(`Error: ${e.message}`, "error");
         clearSearchResult();
       }
     });
+  }
+
+  // Function to perform actual search and cache results
+  function performNewSearch(cookieName, searchTerm, domain, url) {
+    // Show searching status
+    showSearchResult(
+      `Searching for cookies containing "${breakLongString(
+        cookieName
+      )}" on current site...`,
+      "searching"
+    );
+
+    try {
+      debugLog(
+        `Searching for cookies containing "${cookieName}" on ${domain}`,
+        "info"
+      );
+
+      // Search using chrome.cookies API with timeout protection
+      let searchCompleted = false;
+
+      // Set a timeout for the search
+      const searchTimeout = setTimeout(() => {
+        if (!searchCompleted) {
+          debugLog(`Cookie search timed out for ${cookieName}`, "error");
+          showToast(
+            `Search timed out for cookie "${breakLongString(cookieName)}"`,
+            "error"
+          );
+          clearSearchResult();
+        }
+      }, 5000);
+
+      chrome.cookies.getAll(
+        {
+          url: url,
+        },
+        function (cookies) {
+          searchCompleted = true;
+          clearTimeout(searchTimeout);
+
+          if (chrome.runtime.lastError) {
+            debugLog(
+              `Chrome cookies API error: ${chrome.runtime.lastError.message}`,
+              "error"
+            );
+            showToast(
+              `Error searching cookie: ${chrome.runtime.lastError.message}`,
+              "error"
+            );
+            clearSearchResult();
+            return;
+          }
+
+          // Filter cookies that contain the search term
+          const matchingCookies = cookies.filter((cookie) =>
+            cookie.name.toLowerCase().includes(searchTerm)
+          );
+
+          if (matchingCookies.length > 0) {
+            // Cookies found
+            debugLog(
+              `${matchingCookies.length} cookie(s) found containing "${cookieName}"`,
+              "info"
+            );
+
+            let cookiesInfo = `<div class="search-cookie-header"><strong>Found ${matchingCookies.length} cookie(s):</strong></div>`;
+
+            matchingCookies.forEach((cookie, index) => {
+              cookiesInfo += `
+                <div class="search-result-item">
+                  <div class="search-cookie-header">
+                    <div class="search-name-value">
+                      <strong>Name:</strong> <span class="clickable-name" data-cookie-name="${cookie.name.replace(
+                        /"/g,
+                        "&quot;"
+                      )}" title="Click to copy name">${breakLongString(
+                cookie.name
+              )}</span><br>
+                      <strong>Value:</strong> <span class="clickable-value" data-full-value="${cookie.value.replace(
+                        /"/g,
+                        "&quot;"
+                      )}" title="Click to copy value">${
+                cookie.value.length > 50
+                  ? breakLongString(cookie.value.substring(0, 50)) + "..."
+                  : breakLongString(cookie.value)
+              }</span>
+                    </div>
+                    <button class="search-cookie-delete-btn" data-cookie-name="${cookie.name.replace(
+                      /"/g,
+                      "&quot;"
+                    )}" data-cookie-domain="${
+                cookie.domain
+              }" data-cookie-path="${
+                cookie.path
+              }" title="Delete this cookie"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="#dc3545"><path d="M5 7v19c0 1.326.527 2.598 1.464 3.536A5.004 5.004 0 0 0 10 31h12a5.004 5.004 0 0 0 3.536-1.464A5.004 5.004 0 0 0 27 26V7h3a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h3Zm20 0v19c0 .796-.316 1.559-.879 2.121A2.996 2.996 0 0 1 22 29H10a2.996 2.996 0 0 1-2.121-.879A2.996 2.996 0 0 1 7 26V7h18ZM11 3h10a1 1 0 0 0 0-2H11a1 1 0 0 0 0 2Z"/><path d="M12 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0ZM18 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0Z"/></svg></button>
+                  </div>
+                  <div class="cookie-details-search">
+                    <strong>Domain:</strong> ${cookie.domain}<br>
+                    <strong>Path:</strong> ${cookie.path}<br>
+                    <strong>Secure:</strong> ${cookie.secure ? "Yes" : "No"}<br>
+                    <strong>HttpOnly:</strong> ${cookie.httpOnly ? "Yes" : "No"}
+                  </div>
+                </div>
+              `;
+            });
+
+            // Cache the successful result
+            lastSearchQuery = searchTerm;
+            lastSearchDomain = domain;
+            lastSearchResult = {
+              content: cookiesInfo,
+              type: "found",
+            };
+
+            showSearchResult(cookiesInfo, "found");
+          } else {
+            // No cookies found - check if it might exist with different domains
+            debugLog(
+              `No cookies containing "${cookieName}" found on primary domain, checking variations...`,
+              "info"
+            );
+            searchCookieAllDomains(cookieName, domain, url);
+          }
+        }
+      );
+    } catch (e) {
+      showToast(`Error: ${e.message}`, "error");
+      clearSearchResult();
+    }
   }
 
   // Function to search cookie on all possible domain variations
@@ -3015,6 +3117,14 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
             });
 
             showSearchResult(cookiesInfo, "found");
+
+            // Cache the successful result
+            lastSearchQuery = searchTerm;
+            lastSearchDomain = currentDomain;
+            lastSearchResult = {
+              content: cookiesInfo,
+              type: "found",
+            };
           } else if (
             searchCount === uniqueDomains.length &&
             foundCookies.length === 0 &&
@@ -3036,8 +3146,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
             );
             clearSearchResult();
 
-            // Remember this term as not found to avoid future UI searches
-            lastNotFoundTerm = cookieName;
+            // Cache the "not found" result to prevent repeated searching
+            lastSearchQuery = searchTerm;
+            lastSearchDomain = currentDomain;
+            lastSearchResult = {
+              content: "", // Empty content since we only show toast
+              type: "not-found",
+            };
           }
         }
       );
@@ -3250,9 +3365,26 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     });
   }
 
+  // Function to check if search results have any remaining items
+  function hasSearchResults() {
+    const searchResult = document.getElementById("search-result");
+    const resultItems = searchResult.querySelectorAll(".search-result-item");
+    return resultItems.length > 0;
+  }
+
   // Function to show search results
   function showSearchResult(message, type) {
     const searchResult = document.getElementById("search-result");
+
+    // Check if we're trying to set the same content and class - avoid unnecessary DOM changes
+    const currentContent = searchResult.innerHTML;
+    const currentClassName = searchResult.className;
+    const newClassName = `search-result ${type}`;
+
+    if (currentContent === message && currentClassName === newClassName) {
+      debugLog(`Search result unchanged, skipping DOM update`, "info");
+      return;
+    }
 
     // Clear any existing timers first
     if (searchResult.hideTimer) {
@@ -3260,48 +3392,17 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       searchResult.hideTimer = null;
     }
 
-    // Create header with close button
-    const headerDiv = document.createElement("div");
-    headerDiv.className = "search-result-header";
+    searchResult.innerHTML = message;
+    searchResult.className = newClassName;
+    // debugLog(`Search result: ${type} - ${message}`, "info"); // Removed to avoid console clutter
 
-    const titleSpan = document.createElement("span");
-    titleSpan.style.fontWeight = "bold";
-
-    // Set title based on the type
+    // Keep search timeout only for "searching" status as fallback
     if (type === "searching") {
-      titleSpan.textContent = "Searching...";
-    } else if (type === "found") {
-      titleSpan.textContent = "Search Results";
-    } else if (type === "error") {
-      titleSpan.textContent = "Error";
-    } else {
-      titleSpan.textContent = "Results";
+      searchResult.hideTimer = setTimeout(() => {
+        showToast("Search timed out", "error");
+        clearSearchResult();
+      }, 10000);
     }
-
-    const closeButton = document.createElement("button");
-    closeButton.className = "search-result-close";
-    closeButton.innerHTML = "×";
-    closeButton.title = "Close search results";
-    closeButton.addEventListener("click", clearSearchResult);
-
-    headerDiv.appendChild(titleSpan);
-    headerDiv.appendChild(closeButton);
-
-    // Create content div
-    const contentDiv = document.createElement("div");
-    contentDiv.innerHTML = message;
-
-    // Clear and add structured content
-    searchResult.innerHTML = "";
-    searchResult.appendChild(headerDiv);
-    searchResult.appendChild(contentDiv);
-    searchResult.className = `search-result ${type}`;
-
-    // Don't log HTML content to console - only log the search type
-    debugLog(`Search result: ${type}`, "info");
-
-    // No auto-hide timers - only clear on user interaction
-    // Results stay visible until user takes an action
   }
 
   // Function to automatically sync cookie states (optimized)

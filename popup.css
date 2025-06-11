@@ -131,6 +131,10 @@ button:hover {
 .accordion-icon {
   font-size: 18px;
   transition: transform 0.3s;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .accordion-content {
@@ -512,7 +516,7 @@ button:hover {
 }
 
 .search-input-container input.search-input-error {
-  border: 2px solid #f44336 !important;
+  border: 1px solid #f44336 !important;
   background-color: rgba(255, 0, 0, 0.03);
   box-shadow: 0 0 3px rgba(244, 67, 54, 0.5);
   animation: shake 0.5s;
@@ -540,6 +544,8 @@ button:hover {
   display: none;
   overflow: hidden;
   word-wrap: break-word;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .search-result.found {
@@ -1201,4 +1207,3 @@ button:hover {
   height: 0 !important;
 }
 
- 

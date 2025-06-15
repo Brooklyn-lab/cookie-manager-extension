@@ -7,6 +7,7 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 ### 🍪 Saved Cookies Management
 
 - **Add new cookies** with customizable name, value, domain, path and expiration settings
+- **Edit cookie names and values** with modal dialog interface
 - **Global cookies** that work across all domains
 - **Save cookies** for future reuse across sessions
 - **Copy cookie names and values** with one click (click on cookie name/value text)
@@ -43,9 +44,12 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 ### 🌐 Site Information
 
 - **View current site cookies** with detailed information
+- **Edit cookie names and values** directly from site cookies display
 - **Copy cookie names and values** from site cookies with one click
 - **Delete individual cookies** directly from site cookies list
+- **Auto-close functionality** - site cookies window closes after deleting last cookie
 - **Search for specific cookies** on the current site
+- **Edit found cookies** from search results with real-time updates
 - **Copy found cookies** from search results
 - **Delete cookies** from search results
 - **Toast notifications** for search errors instead of persistent messages
@@ -158,6 +162,9 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 
 ### New Features
 
+- **Cookie editing functionality**: Edit both names and values across all contexts (saved, search, site cookies)
+- **Modal dialog interface**: Clean editing experience with name and value fields
+- **Real-time updates**: All displays update immediately after editing
 - **Auto-focus functionality**: Automatic cursor positioning in Name field when form opens
 - **Import/Export system**: Complete cookie backup and restore with JSON format
 - **Enhanced validation**: Unified error styling with red borders and shake animations
@@ -169,6 +176,7 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 - **Domain compatibility**: Smart detection of cookie-domain compatibility
 - **Enhanced error handling**: Toast notifications replace persistent error messages
 - **Click zone optimization**: Precise click areas for copy functionality
+- **Duplicate prevention**: Smart cookie handling prevents duplicates during editing
 
 ### APIs Used
 

@@ -631,7 +631,6 @@ button:hover {
   border: none;
   padding: 4px;
   cursor: pointer;
-  margin-left: 10px;
   transition: transform 0.2s ease;
 }
 
@@ -1215,5 +1214,181 @@ button:hover {
   pointer-events: none !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+.search-cookie-buttons {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.search-cookie-edit-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.search-cookie-edit-btn:hover {
+  transform: scale(1.1);
+  background-color: transparent !important;
+}
+
+.cookie-edit-btn-icon {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  position: absolute;
+  top: 12px;
+  right: 32px;
+  transition: transform 0.2s ease;
+  z-index: 10;
+}
+
+.cookie-edit-btn-icon:hover {
+  transform: scale(1.1);
+  background-color: transparent !important;
+}
+
+/* Edit modal styles */
+.edit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.edit-modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 350px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: modalAppear 0.2s ease-out;
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.edit-modal-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.edit-modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.edit-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-modal-close:hover {
+  color: #666;
+}
+
+.edit-modal-body {
+  padding: 20px;
+}
+
+.edit-modal-body label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.edit-modal-body input[type="text"],
+.edit-modal-body textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+}
+
+.edit-modal-body textarea {
+  resize: vertical;
+}
+
+.edit-modal-body textarea:last-child {
+  margin-bottom: 0;
+}
+
+.edit-modal-body textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.edit-modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.edit-save-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.edit-save-btn:hover {
+  background-color: #0056b3;
+}
+
+.edit-cancel-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.edit-cancel-btn:hover {
+  background-color: #545b62;
 }
 

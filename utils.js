@@ -20,12 +20,24 @@ const encryptionHelpers = {
 
     const decryptedCookie = { ...cookie };
     try {
+      // Validate that the value is a proper base64 string
+      if (typeof cookie.value !== "string" || !cookie.value) {
+        throw new Error("Invalid cookie value for decryption");
+      }
+
+      // Additional validation for base64 format
+      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+      if (!base64Regex.test(cookie.value)) {
+        throw new Error("Cookie value is not properly base64 encoded");
+      }
+
       decryptedCookie.value = atob(cookie.value);
+      decryptedCookie.isEncrypted = false;
     } catch (e) {
-      console.error("Failed to decrypt cookie value:", e);
-      decryptedCookie.value = cookie.value; // Fallback to encrypted value
+      // Silently handle decryption errors - just use original value
+      decryptedCookie.value = cookie.value;
+      decryptedCookie.isEncrypted = false;
     }
-    decryptedCookie.isEncrypted = false;
     return decryptedCookie;
   },
 };
@@ -50,6 +62,22 @@ function validateCookieName(name) {
     return { valid: false, message: "Cookie name contains invalid characters" };
   }
 
+  // Security check: Prevent HTML tags and potential XSS
+  if (name.includes("<") || name.includes(">")) {
+    return {
+      valid: false,
+      message: "Cookie name cannot contain HTML tags (< or > characters)",
+    };
+  }
+
+  // Additional security check for other dangerous characters
+  if (name.includes('"') || name.includes("'") || name.includes("&")) {
+    return {
+      valid: false,
+      message: "Cookie name cannot contain quotes or special HTML characters",
+    };
+  }
+
   return { valid: true };
 }
 
@@ -63,6 +91,14 @@ function validateCookieValue(value) {
     return {
       valid: false,
       message: "Cookie value is too long (max 4000 characters)",
+    };
+  }
+
+  // Security check: Warn about HTML tags in values (less strict than names)
+  if (value.includes("<script") || value.includes("</script>")) {
+    return {
+      valid: false,
+      message: "Cookie value cannot contain script tags for security reasons",
     };
   }
 
@@ -164,10 +200,7 @@ function showSensitiveDomainWarning(domain, action) {
 
     // For sensitive domains, we'd normally show a confirmation dialog
     // Since we can't do this directly in the browser extension popup,
-    // we'll just log a warning and proceed
-    console.warn(
-      `WARNING: You are about to ${action} a cookie for a potentially sensitive domain: ${domain}`
-    );
+    // we'll just proceed with the action
 
     // In a real implementation, you would show a dialog and wait for user confirmation
     // For now, we'll just resolve the promise to continue

@@ -993,13 +993,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const hasMore = decryptedCookie.value.length > 15;
     valueSpan.textContent = displayValue + (hasMore ? "..." : "");
 
+    // Create details text safely without innerHTML
+    const detailsText = document.createElement("span");
     if (decryptedCookie.isGlobal) {
-      cookieDetails.innerHTML = `Global | Path: ${pathInfo} | Expires: ${expirationInfo}<br>Value: `;
-      cookieDetails.appendChild(valueSpan);
+      detailsText.textContent = `Global | Path: ${pathInfo} | Expires: ${expirationInfo}`;
     } else {
-      cookieDetails.innerHTML = `${decryptedCookie.domain} | Path: ${pathInfo} | Expires: ${expirationInfo}<br>Value: `;
-      cookieDetails.appendChild(valueSpan);
+      detailsText.textContent = `${decryptedCookie.domain} | Path: ${pathInfo} | Expires: ${expirationInfo}`;
     }
+
+    const lineBreak = document.createElement("br");
+    const valueLabel = document.createElement("span");
+    valueLabel.textContent = "Value: ";
+
+    cookieDetails.appendChild(detailsText);
+    cookieDetails.appendChild(lineBreak);
+    cookieDetails.appendChild(valueLabel);
+    cookieDetails.appendChild(valueSpan);
 
     // Add event listener for value clicking
     valueSpan.addEventListener("click", function () {
@@ -2422,31 +2431,57 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
           const cookieDomain = document.createElement("div");
           cookieDomain.className = "site-cookie-domain";
-          cookieDomain.innerHTML = `<strong>Domain:</strong> ${
-            cookie.domain || domain
-          }`;
+          const domainLabel = document.createElement("strong");
+          domainLabel.textContent = "Domain:";
+          const domainValue = document.createTextNode(
+            ` ${cookie.domain || domain}`
+          );
+          cookieDomain.appendChild(domainLabel);
+          cookieDomain.appendChild(domainValue);
           cookieDetailsDiv.appendChild(cookieDomain);
 
           const cookiePath = document.createElement("div");
           cookiePath.className = "site-cookie-path";
-          cookiePath.innerHTML = `<strong>Path:</strong> ${cookie.path || "/"}`;
+          const pathLabel = document.createElement("strong");
+          pathLabel.textContent = "Path:";
+          const pathValue = document.createTextNode(` ${cookie.path || "/"}`);
+          cookiePath.appendChild(pathLabel);
+          cookiePath.appendChild(pathValue);
           cookieDetailsDiv.appendChild(cookiePath);
 
           const cookieExpires = document.createElement("div");
           cookieExpires.className = "site-cookie-expires";
+          const expiresLabel = document.createElement("strong");
+          expiresLabel.textContent = "Expires:";
+          let expiresValue;
           if (cookie.expirationDate) {
             const expiryDate = new Date(cookie.expirationDate * 1000);
-            cookieExpires.innerHTML = `<strong>Expires:</strong> ${expiryDate.toLocaleString()}`;
+            expiresValue = document.createTextNode(
+              ` ${expiryDate.toLocaleString()}`
+            );
           } else {
-            cookieExpires.innerHTML = `<strong>Expires:</strong> Session cookie`;
+            expiresValue = document.createTextNode(" Session cookie");
           }
+          cookieExpires.appendChild(expiresLabel);
+          cookieExpires.appendChild(expiresValue);
           cookieDetailsDiv.appendChild(cookieExpires);
 
           const cookieFlags = document.createElement("div");
           cookieFlags.className = "site-cookie-flags";
-          cookieFlags.innerHTML = `<strong>Secure:</strong> ${
-            cookie.secure ? "Yes" : "No"
-          } | <strong>HttpOnly:</strong> ${cookie.httpOnly ? "Yes" : "No"}`;
+          const secureLabel = document.createElement("strong");
+          secureLabel.textContent = "Secure:";
+          const secureValue = document.createTextNode(
+            ` ${cookie.secure ? "Yes" : "No"} | `
+          );
+          const httpOnlyLabel = document.createElement("strong");
+          httpOnlyLabel.textContent = "HttpOnly:";
+          const httpOnlyValue = document.createTextNode(
+            ` ${cookie.httpOnly ? "Yes" : "No"}`
+          );
+          cookieFlags.appendChild(secureLabel);
+          cookieFlags.appendChild(secureValue);
+          cookieFlags.appendChild(httpOnlyLabel);
+          cookieFlags.appendChild(httpOnlyValue);
           cookieDetailsDiv.appendChild(cookieFlags);
 
           cookieElement.appendChild(cookieDetailsDiv);
@@ -4251,34 +4286,85 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       // Create modal for editing
       const modal = document.createElement("div");
       modal.className = "edit-modal";
-      modal.innerHTML = `
-        <div class="edit-modal-content">
-          <div class="edit-modal-header">
-            <h3>Edit Cookie</h3>
-            <button class="edit-modal-close">&times;</button>
-          </div>
-          <div class="edit-modal-body">
-            <label for="edit-cookie-name"><strong>Name:</strong></label>
-            <input type="text" id="edit-cookie-name" placeholder="Cookie name">
-            <label for="edit-cookie-value"><strong>Value:</strong></label>
-            <textarea id="edit-cookie-value" rows="4" placeholder="Enter cookie value..."></textarea>
-          </div>
-          <div class="edit-modal-footer">
-            <button id="save-cookie-edit" class="edit-save-btn">Save</button>
-            <button id="cancel-cookie-edit" class="edit-cancel-btn">Cancel</button>
-          </div>
-        </div>
-      `;
+      // Create modal content safely without innerHTML
+      const modalContent = document.createElement("div");
+      modalContent.className = "edit-modal-content";
+
+      const modalHeader = document.createElement("div");
+      modalHeader.className = "edit-modal-header";
+
+      const headerTitle = document.createElement("h3");
+      headerTitle.textContent = "Edit Cookie";
+
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "edit-modal-close";
+      closeBtn.textContent = "×";
+
+      modalHeader.appendChild(headerTitle);
+      modalHeader.appendChild(closeBtn);
+
+      const modalBody = document.createElement("div");
+      modalBody.className = "edit-modal-body";
+
+      // Name field
+      const nameLabel = document.createElement("label");
+      nameLabel.setAttribute("for", "edit-cookie-name");
+      const nameLabelStrong = document.createElement("strong");
+      nameLabelStrong.textContent = "Name:";
+      nameLabel.appendChild(nameLabelStrong);
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.id = "edit-cookie-name";
+      nameInput.placeholder = "Cookie name";
+
+      // Value field
+      const valueLabel = document.createElement("label");
+      valueLabel.setAttribute("for", "edit-cookie-value");
+      const valueLabelStrong = document.createElement("strong");
+      valueLabelStrong.textContent = "Value:";
+      valueLabel.appendChild(valueLabelStrong);
+
+      const valueInput = document.createElement("textarea");
+      valueInput.id = "edit-cookie-value";
+      valueInput.rows = 4;
+      valueInput.placeholder = "Enter cookie value...";
+
+      modalBody.appendChild(nameLabel);
+      modalBody.appendChild(nameInput);
+      modalBody.appendChild(valueLabel);
+      modalBody.appendChild(valueInput);
+
+      const modalFooter = document.createElement("div");
+      modalFooter.className = "edit-modal-footer";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.id = "save-cookie-edit";
+      saveBtn.className = "edit-save-btn";
+      saveBtn.textContent = "Save";
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.id = "cancel-cookie-edit";
+      cancelBtn.className = "edit-cancel-btn";
+      cancelBtn.textContent = "Cancel";
+
+      modalFooter.appendChild(saveBtn);
+      modalFooter.appendChild(cancelBtn);
+
+      modalContent.appendChild(modalHeader);
+      modalContent.appendChild(modalBody);
+      modalContent.appendChild(modalFooter);
+      modal.appendChild(modalContent);
 
       document.body.appendChild(modal);
 
       // Set values safely using properties instead of innerHTML
-      const nameInput = modal.querySelector("#edit-cookie-name");
-      const textarea = modal.querySelector("#edit-cookie-value");
-      nameInput.value = decryptedCookie.name;
-      textarea.value = decryptedCookie.value;
-      textarea.focus();
-      textarea.select();
+      const editNameInput = modal.querySelector("#edit-cookie-name");
+      const editTextarea = modal.querySelector("#edit-cookie-value");
+      editNameInput.value = decryptedCookie.name;
+      editTextarea.value = decryptedCookie.value;
+      editTextarea.focus();
+      editTextarea.select();
 
       // Close modal handlers
       const closeModal = () => {
@@ -4301,12 +4387,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
 
       // Save handler
       modal.querySelector("#save-cookie-edit").addEventListener("click", () => {
-        const newName = nameInput.value.trim();
-        const newValue = textarea.value.trim();
+        const newName = editNameInput.value.trim();
+        const newValue = editTextarea.value.trim();
 
         if (newName === "") {
           showToast("Cookie name cannot be empty", "error");
-          nameInput.focus();
+          editNameInput.focus();
           return;
         }
 
@@ -4314,13 +4400,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         const nameValidation = validateCookieName(newName);
         if (!nameValidation.valid) {
           showToast(nameValidation.message, "error");
-          nameInput.focus();
+          editNameInput.focus();
           return;
         }
 
         if (newValue === "") {
           showToast("Cookie value cannot be empty", "error");
-          textarea.focus();
+          editTextarea.focus();
           return;
         }
 
@@ -4328,7 +4414,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         const valueValidation = validateCookieValue(newValue);
         if (!valueValidation.valid) {
           showToast(valueValidation.message, "error");
-          textarea.focus();
+          editTextarea.focus();
           return;
         }
 
@@ -4477,7 +4563,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
       });
 
       // Enter key to save
-      textarea.addEventListener("keydown", (e) => {
+      editTextarea.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && e.ctrlKey) {
           modal.querySelector("#save-cookie-edit").click();
         }
@@ -4495,34 +4581,85 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     // Create modal for editing
     const modal = document.createElement("div");
     modal.className = "edit-modal";
-    modal.innerHTML = `
-      <div class="edit-modal-content">
-        <div class="edit-modal-header">
-          <h3>Edit Cookie</h3>
-          <button class="edit-modal-close">&times;</button>
-        </div>
-        <div class="edit-modal-body">
-          <label for="edit-search-cookie-name"><strong>Name:</strong></label>
-          <input type="text" id="edit-search-cookie-name" placeholder="Cookie name">
-          <label for="edit-search-cookie-value"><strong>Value:</strong></label>
-          <textarea id="edit-search-cookie-value" rows="4" placeholder="Enter cookie value..."></textarea>
-        </div>
-        <div class="edit-modal-footer">
-          <button id="save-search-cookie-edit" class="edit-save-btn">Save</button>
-          <button id="cancel-search-cookie-edit" class="edit-cancel-btn">Cancel</button>
-        </div>
-      </div>
-    `;
+    // Create modal content safely without innerHTML
+    const modalContent = document.createElement("div");
+    modalContent.className = "edit-modal-content";
+
+    const modalHeader = document.createElement("div");
+    modalHeader.className = "edit-modal-header";
+
+    const headerTitle = document.createElement("h3");
+    headerTitle.textContent = "Edit Cookie";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "edit-modal-close";
+    closeBtn.textContent = "×";
+
+    modalHeader.appendChild(headerTitle);
+    modalHeader.appendChild(closeBtn);
+
+    const modalBody = document.createElement("div");
+    modalBody.className = "edit-modal-body";
+
+    // Name field
+    const nameLabel = document.createElement("label");
+    nameLabel.setAttribute("for", "edit-search-cookie-name");
+    const nameLabelStrong = document.createElement("strong");
+    nameLabelStrong.textContent = "Name:";
+    nameLabel.appendChild(nameLabelStrong);
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.id = "edit-search-cookie-name";
+    nameInput.placeholder = "Cookie name";
+
+    // Value field
+    const valueLabel = document.createElement("label");
+    valueLabel.setAttribute("for", "edit-search-cookie-value");
+    const valueLabelStrong = document.createElement("strong");
+    valueLabelStrong.textContent = "Value:";
+    valueLabel.appendChild(valueLabelStrong);
+
+    const valueInput = document.createElement("textarea");
+    valueInput.id = "edit-search-cookie-value";
+    valueInput.rows = 4;
+    valueInput.placeholder = "Enter cookie value...";
+
+    modalBody.appendChild(nameLabel);
+    modalBody.appendChild(nameInput);
+    modalBody.appendChild(valueLabel);
+    modalBody.appendChild(valueInput);
+
+    const modalFooter = document.createElement("div");
+    modalFooter.className = "edit-modal-footer";
+
+    const saveBtn = document.createElement("button");
+    saveBtn.id = "save-search-cookie-edit";
+    saveBtn.className = "edit-save-btn";
+    saveBtn.textContent = "Save";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.id = "cancel-search-cookie-edit";
+    cancelBtn.className = "edit-cancel-btn";
+    cancelBtn.textContent = "Cancel";
+
+    modalFooter.appendChild(saveBtn);
+    modalFooter.appendChild(cancelBtn);
+
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+    modal.appendChild(modalContent);
 
     document.body.appendChild(modal);
 
     // Set values safely using properties instead of innerHTML
-    const nameInput = modal.querySelector("#edit-search-cookie-name");
-    const textarea = modal.querySelector("#edit-search-cookie-value");
-    nameInput.value = cookieName;
-    textarea.value = currentValue;
-    textarea.focus();
-    textarea.select();
+    const searchNameInput = modal.querySelector("#edit-search-cookie-name");
+    const searchTextarea = modal.querySelector("#edit-search-cookie-value");
+    searchNameInput.value = cookieName;
+    searchTextarea.value = currentValue;
+    searchTextarea.focus();
+    searchTextarea.select();
 
     // Close modal handlers
     const closeModal = () => {
@@ -4547,12 +4684,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     modal
       .querySelector("#save-search-cookie-edit")
       .addEventListener("click", () => {
-        const newName = nameInput.value.trim();
-        const newValue = textarea.value.trim();
+        const newName = searchNameInput.value.trim();
+        const newValue = searchTextarea.value.trim();
 
         if (newName === "") {
           showToast("Cookie name cannot be empty", "error");
-          nameInput.focus();
+          searchNameInput.focus();
           return;
         }
 
@@ -4560,13 +4697,13 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         const nameValidation = validateCookieName(newName);
         if (!nameValidation.valid) {
           showToast(nameValidation.message, "error");
-          nameInput.focus();
+          searchNameInput.focus();
           return;
         }
 
         if (newValue === "") {
           showToast("Cookie value cannot be empty", "error");
-          textarea.focus();
+          searchTextarea.focus();
           return;
         }
 
@@ -4574,7 +4711,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         const valueValidation = validateCookieValue(newValue);
         if (!valueValidation.valid) {
           showToast(valueValidation.message, "error");
-          textarea.focus();
+          searchTextarea.focus();
           return;
         }
 
@@ -4810,7 +4947,11 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                 ".search-cookie-header"
               );
               if (header) {
-                header.innerHTML = `<strong>Found ${remainingItems.length} cookie(s):</strong>`;
+                // Clear existing content
+                header.textContent = "";
+                const strongElement = document.createElement("strong");
+                strongElement.textContent = `Found ${remainingItems.length} cookie(s):`;
+                header.appendChild(strongElement);
               }
             }
           }

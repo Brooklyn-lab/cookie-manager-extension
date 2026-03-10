@@ -83,14 +83,12 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
           // Create object for chrome.cookies API
           const cookieDetails = {
-            url: `http${domain.startsWith(".") ? "s" : ""}://${domain}${
-              cookie.path
-            }`,
+            url: `${urlObj.protocol}//${domain}${cookie.path}`,
             name: cookie.name,
             value: cookie.value,
             path: cookie.path,
             domain: cookieDomain,
-            secure: false,
+            secure: urlObj.protocol === "https:",
             httpOnly: false,
             expirationDate: Math.floor(expirationDate.getTime() / 1000),
           };

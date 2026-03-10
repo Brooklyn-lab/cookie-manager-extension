@@ -208,17 +208,6 @@ function showSensitiveDomainWarning(domain, action) {
   });
 }
 
-// Safe HTML rendering function to prevent XSS
-function safeRenderHTML(element, html) {
-  // Simple sanitization - remove script tags and event handlers
-  const sanitized = html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/on\w+="[^"]*"/g, "")
-    .replace(/on\w+='[^']*'/g, "");
-
-  element.innerHTML = sanitized;
-}
-
 // Export all the helper functions
 window.validateCookieName = validateCookieName;
 window.validateCookieValue = validateCookieValue;
@@ -226,5 +215,4 @@ window.validateCookieDomain = validateCookieDomain;
 window.validateCookiePath = validateCookiePath;
 window.validateExpirationDays = validateExpirationDays;
 window.showSensitiveDomainWarning = showSensitiveDomainWarning;
-window.safeRenderHTML = safeRenderHTML;
 window.encryptionHelpers = encryptionHelpers;

@@ -1,7 +1,7 @@
-import { validateCookieName, validateCookieValue } from "../utils.js";
+import { encryptionHelpers, validateCookieName, validateCookieValue } from "../utils.js";
 import { state } from "./state.js";
 import { showToast, debugLog, breakLongString, formatCookieValue } from "./ui.js";
-import { autoSyncCookieStates } from "./cookies.js";
+import { autoSyncCookieStates, loadSavedCookies } from "./cookies.js";
 
 // Function to safely create search results container
 export function createSearchResultsContainer(cookies, headerText) {
@@ -85,6 +85,18 @@ export function createSearchResultsContainer(cookies, headerText) {
     deleteBtn.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="#dc3545"><path d="M5 7v19c0 1.326.527 2.598 1.464 3.536A5.004 5.004 0 0 0 10 31h12a5.004 5.004 0 0 0 3.536-1.464A5.004 5.004 0 0 0 27 26V7h3a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h3Zm20 0v19c0 .796-.316 1.559-.879 2.121A2.996 2.996 0 0 1 22 29H10a2.996 2.996 0 0 1-2.121-.879A2.996 2.996 0 0 1 7 26V7h18ZM11 3h10a1 1 0 0 0 0-2H11a1 1 0 0 0 0 2Z"/><path d="M12 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0ZM18 12v12a1 1 0 0 0 2 0V12a1 1 0 0 0-2 0Z"/></svg>';
 
+    // Save button
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "search-cookie-save-btn";
+    saveBtn.setAttribute("data-cookie-name", cookie.name);
+    saveBtn.setAttribute("data-cookie-domain", cookie.domain);
+    saveBtn.setAttribute("data-cookie-path", cookie.path);
+    saveBtn.setAttribute("data-cookie-value", cookie.value);
+    saveBtn.title = "Save cookie to your list";
+    saveBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#28a745"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>';
+
+    buttonsDiv.appendChild(saveBtn);
     buttonsDiv.appendChild(editBtn);
     buttonsDiv.appendChild(deleteBtn);
 
@@ -599,6 +611,56 @@ export function showSearchResult(message, type) {
       clearSearchResult();
     }, 10000);
   }
+}
+
+export function saveSearchedCookie(cookieName, cookieDomain, cookiePath, cookieValue) {
+  chrome.storage.local.get(["savedCookies"], function (result) {
+    if (chrome.runtime.lastError) {
+      showToast(`Error reading storage: ${chrome.runtime.lastError.message}`, "error");
+      return;
+    }
+
+    const savedCookies = result.savedCookies || [];
+    const alreadyExists = savedCookies.some((c) => {
+      const decrypted = c.isEncrypted
+        ? encryptionHelpers.decryptCookieValues(c)
+        : c;
+      return decrypted.name === cookieName && decrypted.domain === cookieDomain;
+    });
+
+    if (alreadyExists) {
+      showToast(`Cookie "${cookieName}" is already in your saved list`, "info");
+      return;
+    }
+
+    const newCookie = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: cookieName,
+      value: cookieValue || "",
+      domain: cookieDomain,
+      path: cookiePath || "/",
+      expirationDays: 30,
+      isGlobal: false,
+      isEncrypted: false,
+    };
+
+    const encrypted = encryptionHelpers.encryptCookieValues(newCookie);
+    savedCookies.push(encrypted);
+
+    chrome.storage.local.set({ savedCookies }, function () {
+      if (chrome.runtime.lastError) {
+        showToast(`Error saving cookie: ${chrome.runtime.lastError.message}`, "error");
+        return;
+      }
+
+      showToast(`Cookie "${cookieName}" saved to your list`, "success");
+      debugLog(`Saved searched cookie: ${cookieName} (${cookieDomain})`, "info");
+      loadSavedCookies();
+      setTimeout(() => {
+        autoSyncCookieStates();
+      }, 300);
+    });
+  });
 }
 
 // Function to delete a searched cookie

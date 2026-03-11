@@ -29,6 +29,7 @@ import {
   copyCookieValueToClipboard,
   editSearchedCookie,
   deleteSearchedCookie,
+  saveSearchedCookie,
 } from "./modules/search.js";
 import { exportSavedCookies, importSavedCookies } from "./modules/import-export.js";
 import {
@@ -300,6 +301,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const path = editBtn.getAttribute("data-cookie-path");
       const value = editBtn.getAttribute("data-cookie-value");
       if (name && domain && path) editSearchedCookie(name, domain, path, value);
+    } else if (event.target.classList.contains("search-cookie-save-btn") || event.target.closest(".search-cookie-save-btn")) {
+      const saveBtn = event.target.classList.contains("search-cookie-save-btn") ? event.target : event.target.closest(".search-cookie-save-btn");
+      const name = saveBtn.getAttribute("data-cookie-name");
+      const domain = saveBtn.getAttribute("data-cookie-domain");
+      const path = saveBtn.getAttribute("data-cookie-path");
+      const value = saveBtn.getAttribute("data-cookie-value");
+      if (name && domain) saveSearchedCookie(name, domain, path, value);
     } else if (event.target.classList.contains("search-cookie-delete-btn") || event.target.closest(".search-cookie-delete-btn")) {
       const deleteBtn = event.target.classList.contains("search-cookie-delete-btn") ? event.target : event.target.closest(".search-cookie-delete-btn");
       const name = deleteBtn.getAttribute("data-cookie-name");
@@ -326,6 +334,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const path = editBtn.getAttribute("data-cookie-path");
       const value = editBtn.getAttribute("data-cookie-value");
       if (name && domain && path) editSearchedCookie(name, domain, path, value);
+    } else if (event.target.classList.contains("search-cookie-save-btn") || event.target.closest(".search-cookie-save-btn")) {
+      const saveBtn = event.target.classList.contains("search-cookie-save-btn") ? event.target : event.target.closest(".search-cookie-save-btn");
+      const name = saveBtn.getAttribute("data-cookie-name");
+      const domain = saveBtn.getAttribute("data-cookie-domain");
+      const path = saveBtn.getAttribute("data-cookie-path");
+      const value = saveBtn.getAttribute("data-cookie-value");
+      if (name && domain) saveSearchedCookie(name, domain, path, value);
     } else if (event.target.classList.contains("site-cookie-delete-btn") || event.target.closest(".site-cookie-delete-btn")) {
       const deleteBtn = event.target.classList.contains("site-cookie-delete-btn") ? event.target : event.target.closest(".site-cookie-delete-btn");
       const name = deleteBtn.getAttribute("data-cookie-name");

@@ -939,6 +939,7 @@ export function autoSyncCookieStates() {
     try {
       const urlObj = new URL(tabs[0].url);
       const domain = urlObj.hostname;
+      const tabUrl = tabs[0].url;
 
       chrome.storage.local.get(["savedCookies"], function (result) {
         const savedCookies = result.savedCookies || [];
@@ -947,7 +948,7 @@ export function autoSyncCookieStates() {
           return;
         }
 
-        chrome.cookies.getAll({ domain }, function (browserCookies) {
+        chrome.cookies.getAll({ url: tabUrl }, function (browserCookies) {
           if (chrome.runtime.lastError) {
             debugLog(
               `Auto-sync error: ${chrome.runtime.lastError.message}`,

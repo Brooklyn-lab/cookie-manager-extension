@@ -18,11 +18,15 @@ node_modules/
 npm-debug.log
 yarn-error.log
 yarn-debug.log
+package-lock.json
 
 # Build and compiled files
 dist/
 build/
 *.zip
+
+# Cursor
+.cursor/
 
 # Personal settings
 .env

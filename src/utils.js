@@ -1,10 +1,8 @@
 // Encryption helpers for cookie values
-const encryptionHelpers = {
-  // Simple base64 encoding for demonstration purposes
-  // In production, use a proper encryption library
+export const encryptionHelpers = {
   encryptCookieValues: function (cookie) {
     if (cookie.isEncrypted) {
-      return cookie; // Already encrypted
+      return cookie;
     }
 
     const encryptedCookie = { ...cookie };
@@ -15,17 +13,15 @@ const encryptionHelpers = {
 
   decryptCookieValues: function (cookie) {
     if (!cookie.isEncrypted) {
-      return cookie; // Not encrypted
+      return cookie;
     }
 
     const decryptedCookie = { ...cookie };
     try {
-      // Validate that the value is a proper base64 string
       if (typeof cookie.value !== "string" || !cookie.value) {
         throw new Error("Invalid cookie value for decryption");
       }
 
-      // Additional validation for base64 format
       const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
       if (!base64Regex.test(cookie.value)) {
         throw new Error("Cookie value is not properly base64 encoded");
@@ -34,7 +30,6 @@ const encryptionHelpers = {
       decryptedCookie.value = atob(cookie.value);
       decryptedCookie.isEncrypted = false;
     } catch (e) {
-      // Silently handle decryption errors - just use original value
       decryptedCookie.value = cookie.value;
       decryptedCookie.isEncrypted = false;
     }
@@ -42,8 +37,7 @@ const encryptionHelpers = {
   },
 };
 
-// Cookie name validation
-function validateCookieName(name) {
+export function validateCookieName(name) {
   if (!name) {
     return { valid: false, message: "Please specify cookie name" };
   }
@@ -55,14 +49,12 @@ function validateCookieName(name) {
     };
   }
 
-  // Check for invalid characters (RFC 6265)
   const invalidCharsRegex =
     /[^\u0021\u0023-\u002B\u002D-\u003A\u003C-\u005B\u005D-\u007E]/;
   if (invalidCharsRegex.test(name)) {
     return { valid: false, message: "Cookie name contains invalid characters" };
   }
 
-  // Security check: Prevent HTML tags and potential XSS
   if (name.includes("<") || name.includes(">")) {
     return {
       valid: false,
@@ -70,7 +62,6 @@ function validateCookieName(name) {
     };
   }
 
-  // Additional security check for other dangerous characters
   if (name.includes('"') || name.includes("'") || name.includes("&")) {
     return {
       valid: false,
@@ -81,8 +72,7 @@ function validateCookieName(name) {
   return { valid: true };
 }
 
-// Cookie value validation
-function validateCookieValue(value) {
+export function validateCookieValue(value) {
   if (value === undefined || value === null || value === "") {
     return { valid: false, message: "Please specify cookie value" };
   }
@@ -94,7 +84,6 @@ function validateCookieValue(value) {
     };
   }
 
-  // Security check: Warn about HTML tags in values (less strict than names)
   if (value.includes("<script") || value.includes("</script>")) {
     return {
       valid: false,
@@ -105,19 +94,15 @@ function validateCookieValue(value) {
   return { valid: true };
 }
 
-// Cookie domain validation
-function validateCookieDomain(domain, isGlobal) {
-  // If it's a global cookie, domain is not required
+export function validateCookieDomain(domain, isGlobal) {
   if (isGlobal) {
     return { valid: true };
   }
 
-  // If domain is not specified, it's okay (will use current domain)
   if (!domain) {
     return { valid: true };
   }
 
-  // Basic domain format validation
   const domainRegex =
     /^(\.)?[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])+$/;
   if (!domainRegex.test(domain)) {
@@ -130,8 +115,7 @@ function validateCookieDomain(domain, isGlobal) {
   return { valid: true };
 }
 
-// Cookie path validation
-function validateCookiePath(path) {
+export function validateCookiePath(path) {
   if (!path) {
     return { valid: false, message: "Please specify cookie path" };
   }
@@ -143,9 +127,7 @@ function validateCookiePath(path) {
   return { valid: true };
 }
 
-// Expiration days validation
-function validateExpirationDays(days) {
-  // If not specified or invalid, use default of 30 days
+export function validateExpirationDays(days) {
   if (!days || isNaN(days)) {
     return { valid: true, value: 30 };
   }
@@ -159,8 +141,7 @@ function validateExpirationDays(days) {
   return { valid: true, value: daysNum };
 }
 
-// Function to display sensitive domain warning
-function showSensitiveDomainWarning(domain, action) {
+export function showSensitiveDomainWarning(domain, action) {
   return new Promise((resolve, reject) => {
     const SENSITIVE_KEYWORDS = [
       "bank", "banking", "payment", "paypal",
@@ -231,12 +212,3 @@ function showSensitiveDomainWarning(domain, action) {
     document.body.appendChild(overlay);
   });
 }
-
-// Export all the helper functions
-window.validateCookieName = validateCookieName;
-window.validateCookieValue = validateCookieValue;
-window.validateCookieDomain = validateCookieDomain;
-window.validateCookiePath = validateCookiePath;
-window.validateExpirationDays = validateExpirationDays;
-window.showSensitiveDomainWarning = showSensitiveDomainWarning;
-window.encryptionHelpers = encryptionHelpers;

@@ -1,3 +1,13 @@
+import {
+  encryptionHelpers,
+  validateCookieName,
+  validateCookieValue,
+  validateCookieDomain,
+  validateCookiePath,
+  validateExpirationDays,
+  showSensitiveDomainWarning,
+} from "./utils.js";
+
 document.addEventListener("DOMContentLoaded", function () {
   // DOM Elements
   const cookieNameInput = document.getElementById("cookieName");

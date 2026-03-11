@@ -93,11 +93,19 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 
 ## Installation
 
-1. Download or clone this repository
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" in the top right corner
-4. Click "Load unpacked" and select the extension directory
-5. Cookie Manager is now installed and ready to use
+### From source (development)
+
+1. Clone this repository
+2. Install dependencies: `npm install`
+3. Build the extension: `npm run build`
+4. Open Chrome and navigate to `chrome://extensions/`
+5. Enable "Developer mode" in the top right corner
+6. Click "Load unpacked" and select the `dist/` folder
+7. Cookie Manager is now installed and ready to use
+
+### Development mode
+
+Run `npm run dev` to start watching for changes. Vite will rebuild automatically on file changes. Reload the extension in Chrome to see updates.
 
 ## Usage
 
@@ -222,11 +230,19 @@ The extension requires the following permissions:
 
 ```
 BrowserExtension/
-├── manifest.json      # Extension configuration
-├── popup.html        # Interface HTML
-├── popup.css         # Interface styles with modern button designs, drag & drop, and validation
-├── popup.js          # Main logic with auto-sync, domain validation, drag & drop, and import/export
-└── README.md         # Documentation
+├── src/
+│   ├── popup.html       # Interface HTML
+│   ├── popup.js         # Main logic (ES module)
+│   ├── popup.css        # Interface styles
+│   ├── utils.js         # Validation, encryption helpers
+│   └── background.js    # Service worker for auto-apply
+├── public/
+│   ├── manifest.json    # Extension configuration
+│   └── icon*.png        # Extension icons
+├── dist/                # Built extension (load this in Chrome)
+├── vite.config.js       # Vite build configuration
+├── package.json         # Dependencies and scripts
+└── README.md            # Documentation
 ```
 
 ### Key Functions

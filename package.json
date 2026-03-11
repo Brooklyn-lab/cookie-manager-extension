@@ -1,0 +1,19 @@
+{
+  "name": "cookie-manager-extension",
+  "version": "2.1.0",
+  "private": true,
+  "description": "Advanced cookie manager Chrome extension for developers and QA engineers",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brooklyn-lab/cookie-manager-extension.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}

@@ -3016,7 +3016,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     for (let i = 0; i < str.length; i += maxLength) {
       result += str.slice(i, i + maxLength);
       if (i + maxLength < str.length) {
-        result += "<wbr>"; // Word break opportunity
+        result += "\u200B";
       }
     }
     return result;

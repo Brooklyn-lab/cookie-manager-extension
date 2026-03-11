@@ -1222,6 +1222,19 @@ button:hover {
   flex-shrink: 0;
 }
 
+.search-cookie-save-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.search-cookie-save-btn:hover {
+  transform: scale(1.1);
+  background-color: transparent !important;
+}
+
 .search-cookie-edit-btn {
   background: none;
   border: none;

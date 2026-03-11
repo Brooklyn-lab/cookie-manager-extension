@@ -162,61 +162,74 @@ function validateExpirationDays(days) {
 // Function to display sensitive domain warning
 function showSensitiveDomainWarning(domain, action) {
   return new Promise((resolve, reject) => {
-    // List of sensitive domains
-    const sensitiveDomains = [
-      "bank",
-      "banking",
-      "payment",
-      "paypal",
-      "google",
-      "facebook",
-      "twitter",
-      "amazon",
-      "apple",
-      "microsoft",
-      "login",
-      "auth",
-      "secure",
-      "account",
-      "gov",
-      "health",
-      "medical",
+    const SENSITIVE_KEYWORDS = [
+      "bank", "banking", "payment", "paypal",
+      "google", "facebook", "twitter", "amazon",
+      "apple", "microsoft", "login", "auth",
+      "secure", "account", "gov", "health", "medical",
     ];
 
-    let isSensitive = false;
+    const isSensitive =
+      domain &&
+      typeof domain === "string" &&
+      SENSITIVE_KEYWORDS.some((kw) => domain.toLowerCase().includes(kw));
 
-    // Check if domain contains any sensitive keyword
-    if (domain && typeof domain === "string") {
-      isSensitive = sensitiveDomains.some((keyword) =>
-        domain.toLowerCase().includes(keyword)
-      );
-    }
-
-    // If not sensitive, proceed immediately
     if (!isSensitive) {
       resolve();
       return;
     }
 
-    // For sensitive domains, we'd normally show a confirmation dialog
-    // Since we can't do this directly in the browser extension popup,
-    // we'll just proceed with the action
+    const overlay = document.createElement("div");
+    overlay.className = "edit-modal";
 
-    // In a real implementation, you would show a dialog and wait for user confirmation
-    // For now, we'll just resolve the promise to continue
-    resolve();
+    overlay.innerHTML = `
+      <div class="edit-modal-content" style="max-width: 340px;">
+        <div class="edit-modal-header" style="background: #fff3cd; border-bottom: 1px solid #ffc107;">
+          <h3 style="color: #856404;">⚠ Sensitive Domain</h3>
+          <button class="edit-modal-close">&times;</button>
+        </div>
+        <div class="edit-modal-body">
+          <p style="margin: 0 0 10px; color: #333;">
+            <strong>${domain}</strong> looks like a sensitive domain.
+          </p>
+          <p style="margin: 0; color: #666; font-size: 13px;">
+            Modifying cookies on this domain may affect authentication or security.
+            Are you sure you want to <strong>${action}</strong> this cookie?
+          </p>
+        </div>
+        <div class="edit-modal-footer">
+          <button class="edit-save-btn warning-proceed-btn">Proceed</button>
+          <button class="edit-cancel-btn warning-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    const cleanup = () => overlay.remove();
+
+    overlay.querySelector(".warning-proceed-btn").addEventListener("click", () => {
+      cleanup();
+      resolve();
+    });
+
+    overlay.querySelector(".warning-cancel-btn").addEventListener("click", () => {
+      cleanup();
+      reject(new Error("User cancelled operation on sensitive domain"));
+    });
+
+    overlay.querySelector(".edit-modal-close").addEventListener("click", () => {
+      cleanup();
+      reject(new Error("User cancelled operation on sensitive domain"));
+    });
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        cleanup();
+        reject(new Error("User cancelled operation on sensitive domain"));
+      }
+    });
+
+    document.body.appendChild(overlay);
   });
-}
-
-// Safe HTML rendering function to prevent XSS
-function safeRenderHTML(element, html) {
-  // Simple sanitization - remove script tags and event handlers
-  const sanitized = html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/on\w+="[^"]*"/g, "")
-    .replace(/on\w+='[^']*'/g, "");
-
-  element.innerHTML = sanitized;
 }
 
 // Export all the helper functions
@@ -226,5 +239,4 @@ window.validateCookieDomain = validateCookieDomain;
 window.validateCookiePath = validateCookiePath;
 window.validateExpirationDays = validateExpirationDays;
 window.showSensitiveDomainWarning = showSensitiveDomainWarning;
-window.safeRenderHTML = safeRenderHTML;
 window.encryptionHelpers = encryptionHelpers;

@@ -3051,7 +3051,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
     for (let i = 0; i < str.length; i += maxLength) {
       result += str.slice(i, i + maxLength);
       if (i + maxLength < str.length) {
-        result += "<wbr>"; // Word break opportunity
+        result += "\u200B";
       }
     }
     return result;
@@ -4418,14 +4418,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
           return;
         }
 
-        // Debug logging
-        console.log("Before update:", {
-          originalName: decryptedCookie.name,
-          originalValue: decryptedCookie.value,
-          newName,
-          newValue,
-          isEncrypted: savedCookies[cookieIndex].isEncrypted,
-        });
+        debugLog(`Before update: original=${decryptedCookie.name}, new=${newName}`, "info");
 
         // Store original decrypted name (what's actually in browser)
         const originalBrowserName = decryptedCookie.name;
@@ -4439,20 +4432,12 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
         updatedCookie.name = newName;
         updatedCookie.value = newValue;
 
-        console.log("After decryption and update:", {
-          name: updatedCookie.name,
-          value: updatedCookie.value,
-          isEncrypted: updatedCookie.isEncrypted,
-        });
+        debugLog(`After decryption and update: name=${updatedCookie.name}`, "info");
 
         // Re-encrypt if the original was encrypted
         if (savedCookies[cookieIndex].isEncrypted) {
           updatedCookie = encryptionHelpers.encryptCookieValues(updatedCookie);
-          console.log("After re-encryption:", {
-            name: updatedCookie.name,
-            value: updatedCookie.value,
-            isEncrypted: updatedCookie.isEncrypted,
-          });
+          debugLog(`After re-encryption: name=${updatedCookie.name}`, "info");
         }
 
         // Replace the cookie in the array
@@ -4488,13 +4473,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                   finalCookie.domain || currentDomain
                 }${finalCookie.path || "/"}`;
 
-                console.log("Checking for existing cookie:", {
-                  originalBrowserName,
-                  decryptedName: decryptedCookie.name,
-                  newName,
-                  checkUrl,
-                  nameChanged,
-                });
+                debugLog(`Checking for existing cookie: ${originalBrowserName} at ${checkUrl}`, "info");
 
                 chrome.cookies.get(
                   {
@@ -4502,7 +4481,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                     url: checkUrl,
                   },
                   (existingCookie) => {
-                    console.log("Existing cookie found:", existingCookie);
+                    debugLog(`Existing cookie found: ${!!existingCookie}`, "info");
                     // Only update browser cookie if it already exists
                     if (existingCookie) {
                       // Always remove old cookie first, then create new one
@@ -4513,7 +4492,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                           url: checkUrl,
                         },
                         () => {
-                          console.log("Removed old cookie, creating new one");
+                          debugLog("Removed old cookie, creating new one", "info");
                           // Create new cookie with updated data
                           const setUrl = `https://${
                             finalCookie.domain || currentDomain
@@ -4533,7 +4512,7 @@ Type: ${cookie.isGlobal ? "Global Cookie" : "Domain-specific Cookie"}`,
                           }
 
                           chrome.cookies.set(cookieDetails, (result) => {
-                            console.log("New cookie created:", result);
+                            debugLog(`New cookie created: ${result?.name}`, "info");
                           });
                         }
                       );

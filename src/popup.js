@@ -33,6 +33,16 @@ import {
 } from "./modules/search.js";
 import { exportSavedCookies, importSavedCookies } from "./modules/import-export.js";
 import {
+  initDefaultGroups,
+  createGroup,
+  deleteGroup,
+  enableGroupCookies,
+  disableGroupCookies,
+  renderGroupsUI,
+  updateGroupBadges,
+  showGroupAssignMenu,
+} from "./modules/groups.js";
+import {
   showSiteCookiesInfo,
   clearAllSiteCookies,
   clearAllSiteData,
@@ -404,16 +414,101 @@ document.addEventListener("DOMContentLoaded", function () {
     if (file) importSavedCookies(file, { onComplete: loadSavedCookies });
   });
 
+  // ── Groups accordion ──
+  const groupsAccordion = document.querySelector(".groups-accordion");
+  const groupsHeader = groupsAccordion.querySelector(".accordion-header");
+  const groupsList = document.getElementById("groupsList");
+  const addGroupBtn = document.getElementById("addGroupBtn");
+  const newGroupNameInput = document.getElementById("newGroupName");
+  const newGroupColorInput = document.getElementById("newGroupColor");
+
+  groupsHeader.addEventListener("click", function () {
+    if (state.siteCookiesDisplayed) {
+      state.siteCookiesDisplayed = false;
+      clearStatusMessage();
+    }
+    clearSearchResult();
+
+    const content = groupsAccordion.querySelector(".accordion-content");
+    const isActive = groupsAccordion.classList.contains("active");
+
+    if (isActive) {
+      groupsAccordion.classList.remove("active");
+    } else {
+      if (accordion.classList.contains("active")) {
+        accordion.classList.remove("active");
+      }
+      if (savedCookiesAccordion.classList.contains("active")) {
+        savedCookiesAccordion.classList.remove("active");
+      }
+      groupsAccordion.classList.add("active");
+      renderGroupsUI(groupsList);
+    }
+  });
+
+  addGroupBtn.addEventListener("click", function () {
+    const name = newGroupNameInput.value.trim();
+    if (!name) {
+      showToast("Enter a group name", "error");
+      return;
+    }
+    const color = newGroupColorInput.value;
+    createGroup(name, color, function () {
+      newGroupNameInput.value = "";
+      renderGroupsUI(groupsList);
+    });
+  });
+
+  newGroupNameInput.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") addGroupBtn.click();
+  });
+
+  groupsList.addEventListener("click", function (event) {
+    const enableBtn = event.target.closest(".group-enable-btn");
+    if (enableBtn) {
+      enableGroupCookies(enableBtn.dataset.groupId);
+      return;
+    }
+    const disableBtn = event.target.closest(".group-disable-btn");
+    if (disableBtn) {
+      disableGroupCookies(disableBtn.dataset.groupId);
+      return;
+    }
+    const deleteBtn = event.target.closest(".group-delete-btn");
+    if (deleteBtn) {
+      deleteGroup(deleteBtn.dataset.groupId, function () {
+        renderGroupsUI(groupsList);
+        updateGroupBadges();
+      });
+    }
+  });
+
+  // ── Group badge clicks on cookie items ──
+  document.getElementById("cookiesList").addEventListener("click", function (event) {
+    const badge = event.target.closest(".cookie-group-badge");
+    if (badge) {
+      event.stopPropagation();
+      showGroupAssignMenu(badge.dataset.cookieId, badge);
+    }
+  });
+
   // ── Initialization ──
   cookieDomainInput.disabled = isGlobalCookieCheckbox.checked;
   cookieDomainInput.placeholder = isGlobalCookieCheckbox.checked
     ? "Global cookie (any domain)"
     : "example.com";
 
-  loadSavedCookies();
+  document.addEventListener("cookies-rendered", function () {
+    updateGroupBadges();
+  });
+
+  initDefaultGroups(function () {
+    loadSavedCookies();
+  });
   updateCurrentDomain();
 
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    if (!tabs[0] || !tabs[0].url) return;
     const urlObj = new URL(tabs[0].url);
     if (!isGlobalCookieCheckbox.checked) {
       cookieDomainInput.placeholder = urlObj.hostname;

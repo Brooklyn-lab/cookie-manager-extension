@@ -243,6 +243,8 @@ export function loadSavedCookies() {
     }
 
     updateDraggableState(savedCookies.length);
+
+    document.dispatchEvent(new CustomEvent("cookies-rendered"));
   });
 }
 
@@ -334,9 +336,15 @@ export function createCookieElement(cookie) {
     toggleCookie(decryptedCookie.id);
   });
 
+  const groupBadge = document.createElement("span");
+  groupBadge.className = "cookie-group-badge";
+  groupBadge.dataset.cookieId = decryptedCookie.id;
+  groupBadge.title = "Click to assign group";
+
   cookieItem.appendChild(editBtn);
   cookieItem.appendChild(deleteBtn);
   cookieItem.appendChild(cookieInfo);
+  cookieItem.appendChild(groupBadge);
   cookieItem.appendChild(toggleBtn);
 
   const statusMessage = document.createElement("div");

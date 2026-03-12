@@ -117,8 +117,8 @@ button:hover {
   contain: layout;
 }
 
-/* Remove margin from the saved cookies accordion (last one) */
-.saved-cookies-accordion {
+/* Remove margin from last accordion before bottom controls */
+.groups-accordion {
   margin-bottom: 0;
 }
 
@@ -1403,5 +1403,206 @@ button:hover {
 
 .edit-cancel-btn:hover {
   background-color: #545b62;
+}
+
+/* Cookie Groups */
+.groups-content {
+  padding: 5px 0;
+}
+
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.no-groups-message {
+  color: #999;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.group-color-badge {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.group-name {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-cookie-count {
+  color: #999;
+  font-size: 11px;
+  margin-right: auto;
+}
+
+.group-buttons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.group-enable-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.group-enable-btn:hover {
+  background: #218838;
+}
+
+.group-disable-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.group-disable-btn:hover {
+  background: #c82333;
+}
+
+.group-delete-btn {
+  background: none;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.group-delete-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.add-group-section {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.add-group-section input[type="text"] {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.add-group-section input[type="color"] {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-group-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-group-btn:hover {
+  background: #218838;
+}
+
+/* Cookie group badge on cookie items */
+.cookie-group-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: white;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px dashed #ccc;
+  transition: all 0.2s;
+}
+
+.cookie-group-badge:hover {
+  opacity: 0.8;
+  border-color: #999;
+}
+
+/* Group assign dropdown */
+.group-assign-dropdown {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 140px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.group-assign-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.group-assign-item:hover {
+  background: #f0f0f0;
+}
+
+.group-assign-item.active {
+  background: #e8f0fe;
+  font-weight: 600;
+}
+
+.group-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 

@@ -59,6 +59,21 @@ export function createChromeMock() {
       sync: createStorageArea(),
     },
     cookies: {
+      get: vi.fn((details, callback) => {
+        const found = cookiesData.find((c) => {
+          if (details.name && c.name !== details.name) return false;
+          if (details.url) {
+            try {
+              const url = new URL(details.url);
+              return c.domain === url.hostname || c.domain === `.${url.hostname}`;
+            } catch {
+              return false;
+            }
+          }
+          return true;
+        });
+        callback(found || null);
+      }),
       getAll: vi.fn((details, callback) => {
         const filtered = cookiesData.filter((c) => {
           if (details.url) {
@@ -122,6 +137,13 @@ export function createChromeMock() {
       onInstalled: {
         addListener: vi.fn(),
       },
+    },
+    webNavigation: {
+      getAllFrames: vi.fn((details, callback) => {
+        callback([
+          { frameId: 0, url: "https://example.com/path", parentFrameId: -1 },
+        ]);
+      }),
     },
     browsingData: {
       remove: vi.fn((options, dataToRemove, callback) => {

@@ -36,6 +36,9 @@ function setupMinimalDOM() {
             <input id="cookieDomain" />
             <input id="cookiePath" value="/" />
             <input id="cookieExpiration" value="30" />
+            <select id="cookieSameSite"><option value="unspecified">Unspecified</option></select>
+            <input id="cookieSecure" type="checkbox" />
+            <input id="cookieHttpOnly" type="checkbox" />
             <input id="isGlobalCookie" type="checkbox" checked />
           </div>
         </div>

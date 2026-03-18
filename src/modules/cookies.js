@@ -44,7 +44,7 @@ function fallbackCopyValueToClipboard(cookieValue) {
   document.body.removeChild(textArea);
 }
 
-export function saveCookie(name, value, domain, path, expirationDays, isGlobal) {
+export function saveCookie(name, value, domain, path, expirationDays, isGlobal, options = {}) {
   const cookieConfig = {
     name,
     value,
@@ -52,6 +52,9 @@ export function saveCookie(name, value, domain, path, expirationDays, isGlobal) 
     path,
     expirationDays,
     isGlobal,
+    sameSite: options.sameSite || "unspecified",
+    secure: options.secure || false,
+    httpOnly: options.httpOnly || false,
     id: Date.now().toString(),
   };
 
@@ -112,6 +115,9 @@ export function saveCookie(name, value, domain, path, expirationDays, isGlobal) 
           document.getElementById("cookieDomain").value = "";
           document.getElementById("cookiePath").value = "/";
           document.getElementById("cookieExpiration").value = "30";
+          document.getElementById("cookieSameSite").value = "unspecified";
+          document.getElementById("cookieSecure").checked = false;
+          document.getElementById("cookieHttpOnly").checked = false;
           document.getElementById("isGlobalCookie").checked = true;
           document.getElementById("cookieDomain").disabled = true;
           document.getElementById("cookieDomain").placeholder = "Global cookie (any domain)";
@@ -243,6 +249,8 @@ export function loadSavedCookies() {
     }
 
     updateDraggableState(savedCookies.length);
+
+    document.dispatchEvent(new CustomEvent("cookies-rendered"));
   });
 }
 
@@ -310,11 +318,22 @@ export function createCookieElement(cookie) {
   valueSpan.title = "Click to copy value";
   valueSpan.textContent = breakLongString(formatCookieValue(decryptedCookie.value));
 
+  const sameSiteVal = decryptedCookie.sameSite || "unspecified";
+  const sameSiteLabel = { no_restriction: "None", lax: "Lax", strict: "Strict", unspecified: "Unspec." }[sameSiteVal] || sameSiteVal;
+  const sameSiteCssClass = { no_restriction: "samesite-none", lax: "samesite-lax", strict: "samesite-strict", unspecified: "samesite-unspecified" }[sameSiteVal] || "samesite-unspecified";
+
+  const flagsParts = [];
+  if (decryptedCookie.secure) flagsParts.push("Secure");
+  if (decryptedCookie.httpOnly) flagsParts.push("HttpOnly");
+  const flagsStr = flagsParts.length > 0 ? ` | ${flagsParts.join(", ")}` : "";
+
+  const sameSiteBadge = `<span class="samesite-badge ${sameSiteCssClass}">${sameSiteLabel}</span>`;
+
   if (decryptedCookie.isGlobal) {
-    cookieDetails.innerHTML = `Global | Path: ${pathInfo} | Expires: ${expirationInfo}<br>Value: `;
+    cookieDetails.innerHTML = `Global | Path: ${pathInfo} | Expires: ${expirationInfo} | ${sameSiteBadge}${flagsStr}<br>Value: `;
     cookieDetails.appendChild(valueSpan);
   } else {
-    cookieDetails.innerHTML = `${decryptedCookie.domain} | Path: ${pathInfo} | Expires: ${expirationInfo}<br>Value: `;
+    cookieDetails.innerHTML = `${decryptedCookie.domain} | Path: ${pathInfo} | Expires: ${expirationInfo} | ${sameSiteBadge}${flagsStr}<br>Value: `;
     cookieDetails.appendChild(valueSpan);
   }
 
@@ -334,9 +353,15 @@ export function createCookieElement(cookie) {
     toggleCookie(decryptedCookie.id);
   });
 
+  const groupBadge = document.createElement("span");
+  groupBadge.className = "cookie-group-badge";
+  groupBadge.dataset.cookieId = decryptedCookie.id;
+  groupBadge.title = "Click to assign group";
+
   cookieItem.appendChild(editBtn);
   cookieItem.appendChild(deleteBtn);
   cookieItem.appendChild(cookieInfo);
+  cookieItem.appendChild(groupBadge);
   cookieItem.appendChild(toggleBtn);
 
   const statusMessage = document.createElement("div");
@@ -506,29 +531,6 @@ export function toggleCookie(cookieId) {
             debugLog(`Cookie domain: ${decryptedCookie.domain}`, "info");
             debugLog(`Is global cookie: ${decryptedCookie.isGlobal}`, "info");
 
-            if (!decryptedCookie.isGlobal) {
-              let domainMatches = false;
-
-              if (decryptedCookie.domain === domain) {
-                debugLog(`Exact domain match found`, "info");
-                domainMatches = true;
-              } else if (
-                decryptedCookie.domain.startsWith(".") &&
-                domain.endsWith(decryptedCookie.domain.substring(1))
-              ) {
-                debugLog(`Subdomain match found`, "info");
-                domainMatches = true;
-              }
-
-              if (!domainMatches) {
-                showToast(
-                  `Cookie "${decryptedCookie.name}" is specific to ${decryptedCookie.domain} domain. Current domain (${domain}) doesn't match.`,
-                  "error"
-                );
-                return;
-              }
-            }
-
             const cookieDomain = decryptedCookie.isGlobal
               ? domain
               : decryptedCookie.domain;
@@ -546,9 +548,12 @@ export function toggleCookie(cookieId) {
 
             showSensitiveDomainWarning(targetDomain, action)
               .then(() => {
-                const protocol = cookieDomain.startsWith(".")
-                  ? "https"
-                  : "http";
+                const isSecure = decryptedCookie.secure ||
+                  decryptedCookie.sameSite === "no_restriction";
+                const protocol =
+                  cookieDomain.startsWith(".") || isSecure
+                    ? "https"
+                    : "http";
                 const urlDomain = cookieDomain.startsWith(".")
                   ? cookieDomain.substring(1)
                   : cookieDomain;
@@ -595,7 +600,7 @@ export function toggleCookie(cookieId) {
                     if (cookieExists) {
                       removeCookieFromCurrentTab(decryptedCookie, tabs[0]);
                       showToast(
-                        `Cookie "${decryptedCookie.name}" removed from site ${domain}`,
+                        `Cookie "${decryptedCookie.name}" removed from ${cookieDomain}`,
                         "error"
                       );
                     } else {
@@ -751,51 +756,6 @@ export function setCookie(cookie) {
   completeCookieSet(domain);
 
   function completeCookieSet(domain) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      if (tabs[0] && tabs[0].url) {
-        try {
-          const urlObj = new URL(tabs[0].url);
-          const tabDomain = urlObj.hostname;
-          const tabPath = urlObj.pathname;
-
-          debugLog(
-            `Tab domain: ${tabDomain}, Cookie domain: ${domain}`,
-            "info"
-          );
-          debugLog(
-            `Tab path: ${tabPath}, Cookie path: ${
-              decryptedCookie.path || "/"
-            }`,
-            "info"
-          );
-
-          if (!decryptedCookie.isGlobal && domain !== tabDomain) {
-            const isDomainAllowed =
-              domain.startsWith(".") &&
-              tabDomain.endsWith(domain.substring(1));
-
-            debugLog(`Domain allowed check: ${isDomainAllowed}`, "info");
-
-            if (!isDomainAllowed) {
-              debugLog(
-                `Cannot set cookie for domain ${domain} from ${tabDomain} due to Same-Origin Policy restrictions`,
-                "error"
-              );
-              showToast(
-                `❌ Cannot set cookie for ${domain} from current page due to Same-Origin restrictions`,
-                "error"
-              );
-              return;
-            }
-          }
-        } catch (e) {
-          debugLog(`Error in Same-Origin check: ${e.message}`, "error");
-          showToast(`❌ Error setting cookie: ${e.message}`, "error");
-          return;
-        }
-      }
-    });
-
     let protocol = "http";
     let urlDomain = domain;
 
@@ -804,14 +764,24 @@ export function setCookie(cookie) {
       urlDomain = domain.substring(1);
     }
 
+    const sameSite = decryptedCookie.sameSite || "unspecified";
+    const isSecure = decryptedCookie.secure || sameSite === "no_restriction" || false;
+    const isHttpOnly = decryptedCookie.httpOnly || false;
+
+    if (isSecure && protocol === "http") {
+      protocol = "https";
+      urlDomain = domain && domain.startsWith(".") ? domain.substring(1) : domain;
+    }
+
     const cookieDetails = {
       url: `${protocol}://${urlDomain}${decryptedCookie.path || "/"}`,
       name: decryptedCookie.name,
       value: decryptedCookie.value,
       path: decryptedCookie.path || "/",
       domain: domain && domain.startsWith(".") ? domain : null,
-      secure: false,
-      httpOnly: false,
+      secure: isSecure,
+      httpOnly: isHttpOnly,
+      sameSite: sameSite,
       expirationDate: Math.floor(expirationDate.getTime() / 1000),
     };
 
@@ -963,26 +933,36 @@ export function autoSyncCookieStates() {
             browserCookiesMap.set(key, cookie);
           });
 
+          const sameDomainCookies = [];
+          const crossDomainCookies = [];
+
           savedCookies.forEach((savedCookie) => {
             const canApply = canApplyCookieToCurrentDomain(
               savedCookie,
               domain
             );
-
-            if (!canApply) {
-              updateToggleButtonState(savedCookie.id, false, true);
+            if (canApply) {
+              sameDomainCookies.push(savedCookie);
             } else {
-              const exists = checkCookieInMap(
-                savedCookie,
-                browserCookiesMap,
-                domain
-              );
-              updateToggleButtonState(savedCookie.id, exists, false);
+              crossDomainCookies.push(savedCookie);
             }
           });
 
+          sameDomainCookies.forEach((savedCookie) => {
+            const exists = checkCookieInMap(
+              savedCookie,
+              browserCookiesMap,
+              domain
+            );
+            updateToggleButtonState(savedCookie.id, exists, false);
+          });
+
+          crossDomainCookies.forEach((savedCookie) => {
+            checkCrossDomainCookieState(savedCookie);
+          });
+
           debugLog(
-            `Auto-synced ${savedCookies.length} cookies with 1 API call`,
+            `Auto-synced ${sameDomainCookies.length} same-domain + ${crossDomainCookies.length} cross-domain cookies`,
             "info"
           );
         });
@@ -1008,6 +988,36 @@ export function checkCookieInMap(savedCookie, browserCookiesMap, currentDomain) 
   ];
 
   return possibleKeys.some((key) => browserCookiesMap.has(key));
+}
+
+/**
+ * Check existence of a saved cookie on its own domain via chrome.cookies.get().
+ * Used for non-global cookies whose domain differs from the active tab.
+ */
+export function checkCrossDomainCookieState(savedCookie) {
+  const decrypted = savedCookie.isEncrypted
+    ? encryptionHelpers.decryptCookieValues(savedCookie)
+    : savedCookie;
+
+  const cookieDomain = decrypted.domain;
+  const cookiePath = decrypted.path || "/";
+  let urlDomain = cookieDomain;
+  if (cookieDomain.startsWith(".")) {
+    urlDomain = cookieDomain.substring(1);
+  }
+  const url = `https://${urlDomain}${cookiePath}`;
+
+  chrome.cookies.get({ url, name: decrypted.name }, function (result) {
+    if (chrome.runtime.lastError) {
+      debugLog(
+        `Cross-domain check error for ${decrypted.name}: ${chrome.runtime.lastError.message}`,
+        "error"
+      );
+      updateToggleButtonState(savedCookie.id, false, false);
+      return;
+    }
+    updateToggleButtonState(savedCookie.id, !!result, false);
+  });
 }
 
 export function updateToggleButtonState(cookieId, exists, disabled = false) {
@@ -1138,6 +1148,10 @@ export function editCookieValue(cookieId) {
       ? encryptionHelpers.decryptCookieValues(cookie)
       : cookie;
 
+    const currentSameSite = decryptedCookie.sameSite || "unspecified";
+    const currentSecure = decryptedCookie.secure || false;
+    const currentHttpOnly = decryptedCookie.httpOnly || false;
+
     const modal = document.createElement("div");
     modal.className = "edit-modal";
     modal.innerHTML = `
@@ -1151,6 +1165,25 @@ export function editCookieValue(cookieId) {
           <input type="text" id="edit-cookie-name" placeholder="Cookie name">
           <label for="edit-cookie-value"><strong>Value:</strong></label>
           <textarea id="edit-cookie-value" rows="4" placeholder="Enter cookie value..."></textarea>
+          <div class="form-row">
+            <div class="form-group form-group-inline">
+              <label for="edit-cookie-samesite"><strong>SameSite:</strong></label>
+              <select id="edit-cookie-samesite">
+                <option value="unspecified">Unspecified</option>
+                <option value="lax">Lax</option>
+                <option value="strict">Strict</option>
+                <option value="no_restriction">None</option>
+              </select>
+            </div>
+            <div class="form-group form-group-inline checkbox-group">
+              <input type="checkbox" id="edit-cookie-secure">
+              <label for="edit-cookie-secure">Secure</label>
+            </div>
+            <div class="form-group form-group-inline checkbox-group">
+              <input type="checkbox" id="edit-cookie-httponly">
+              <label for="edit-cookie-httponly">HttpOnly</label>
+            </div>
+          </div>
         </div>
         <div class="edit-modal-footer">
           <button id="save-cookie-edit" class="edit-save-btn">Save</button>
@@ -1163,10 +1196,23 @@ export function editCookieValue(cookieId) {
 
     const nameInput = modal.querySelector("#edit-cookie-name");
     const textarea = modal.querySelector("#edit-cookie-value");
+    const sameSiteSelect = modal.querySelector("#edit-cookie-samesite");
+    const secureCheckbox = modal.querySelector("#edit-cookie-secure");
+    const httpOnlyCheckbox = modal.querySelector("#edit-cookie-httponly");
+
     nameInput.value = decryptedCookie.name;
     textarea.value = decryptedCookie.value;
+    sameSiteSelect.value = currentSameSite;
+    secureCheckbox.checked = currentSecure;
+    httpOnlyCheckbox.checked = currentHttpOnly;
     textarea.focus();
     textarea.select();
+
+    sameSiteSelect.addEventListener("change", function () {
+      if (this.value === "no_restriction") {
+        secureCheckbox.checked = true;
+      }
+    });
 
     const closeModal = () => {
       document.body.removeChild(modal);
@@ -1215,6 +1261,15 @@ export function editCookieValue(cookieId) {
         return;
       }
 
+      const newSameSite = sameSiteSelect.value;
+      const newSecure = secureCheckbox.checked;
+      const newHttpOnly = httpOnlyCheckbox.checked;
+
+      if (newSameSite === "no_restriction" && !newSecure) {
+        showToast("SameSite=None requires Secure to be enabled", "error");
+        return;
+      }
+
       debugLog(`Before update: original=${decryptedCookie.name}, new=${newName}`, "info");
 
       const originalBrowserName = decryptedCookie.name;
@@ -1225,6 +1280,9 @@ export function editCookieValue(cookieId) {
 
       updatedCookie.name = newName;
       updatedCookie.value = newValue;
+      updatedCookie.sameSite = newSameSite;
+      updatedCookie.secure = newSecure;
+      updatedCookie.httpOnly = newHttpOnly;
 
       debugLog(`After decryption and update: name=${updatedCookie.name}`, "info");
 
@@ -1243,68 +1301,57 @@ export function editCookieValue(cookieId) {
         const nameChanged = newName !== decryptedCookie.name;
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            const currentUrl = new URL(tabs[0].url);
-            const currentDomain = currentUrl.hostname;
+          const finalCookie = savedCookies[cookieIndex];
+          const currentDomain = tabs[0]
+            ? new URL(tabs[0].url).hostname
+            : null;
+          const cookieDomain = finalCookie.isGlobal
+            ? currentDomain
+            : finalCookie.domain;
 
-            const finalCookie = savedCookies[cookieIndex];
-            const shouldCheckBrowserCookie =
-              finalCookie.isGlobal ||
-              (finalCookie.domain &&
-                (currentDomain === finalCookie.domain ||
-                  currentDomain.endsWith(
-                    "." + finalCookie.domain.replace(/^\./, "")
-                  )));
+          if (!cookieDomain) return;
 
-            if (shouldCheckBrowserCookie) {
-              const checkUrl = `https://${
-                finalCookie.domain || currentDomain
-              }${finalCookie.path || "/"}`;
+          const cookieDomainClean = cookieDomain.startsWith(".")
+            ? cookieDomain.substring(1)
+            : cookieDomain;
+          const checkUrl = `https://${cookieDomainClean}${finalCookie.path || "/"}`;
 
-              debugLog(`Checking for existing cookie: ${originalBrowserName} at ${checkUrl}`, "info");
+          debugLog(`Checking for existing cookie: ${originalBrowserName} at ${checkUrl}`, "info");
 
-              chrome.cookies.get(
-                {
-                  name: originalBrowserName,
-                  url: checkUrl,
-                },
-                (existingCookie) => {
-                  debugLog(`Existing cookie found: ${!!existingCookie}`, "info");
-                  if (existingCookie) {
-                    chrome.cookies.remove(
-                      {
-                        name: originalBrowserName,
-                        url: checkUrl,
-                      },
-                      () => {
-                        debugLog("Removed old cookie, creating new one", "info");
-                        const setUrl = `https://${
-                          finalCookie.domain || currentDomain
-                        }${finalCookie.path || "/"}`;
-                        const cookieDetails = {
-                          name: newName,
-                          value: newValue,
-                          domain: finalCookie.domain || currentDomain,
-                          path: finalCookie.path || "/",
-                          url: setUrl,
-                        };
+          chrome.cookies.get(
+            { name: originalBrowserName, url: checkUrl },
+            (existingCookie) => {
+              debugLog(`Existing cookie found: ${!!existingCookie}`, "info");
+              if (existingCookie) {
+                chrome.cookies.remove(
+                  { name: originalBrowserName, url: checkUrl },
+                  () => {
+                    debugLog("Removed old cookie, creating new one", "info");
+                    const cookieDetails = {
+                      name: newName,
+                      value: newValue,
+                      domain: cookieDomain.startsWith(".") ? cookieDomain : null,
+                      path: finalCookie.path || "/",
+                      url: checkUrl,
+                      sameSite: newSameSite,
+                      secure: newSecure,
+                      httpOnly: newHttpOnly,
+                    };
 
-                        if (finalCookie.expirationDays) {
-                          cookieDetails.expirationDate =
-                            Math.floor(Date.now() / 1000) +
-                            finalCookie.expirationDays * 24 * 60 * 60;
-                        }
+                    if (finalCookie.expirationDays) {
+                      cookieDetails.expirationDate =
+                        Math.floor(Date.now() / 1000) +
+                        finalCookie.expirationDays * 24 * 60 * 60;
+                    }
 
-                        chrome.cookies.set(cookieDetails, (result) => {
-                          debugLog(`New cookie created: ${result?.name}`, "info");
-                        });
-                      }
-                    );
+                    chrome.cookies.set(cookieDetails, (result) => {
+                      debugLog(`New cookie created: ${result?.name}`, "info");
+                    });
                   }
-                }
-              );
+                );
+              }
             }
-          }
+          );
         });
 
         if (nameChanged) {

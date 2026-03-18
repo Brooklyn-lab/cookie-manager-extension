@@ -51,21 +51,34 @@ Types:
 ## Setting Up the Development Environment
 
 1. Clone the repository
-2. Create a new branch from `dev`
-3. Load the unpacked extension in Chrome from your development directory
-4. Make your changes and test in the browser
+2. Run `npm install` to install dependencies
+3. Create a new branch from `dev`
+4. Run `npm run dev` for watch mode (auto-rebuilds on change)
+5. Open `chrome://extensions/`, enable Developer mode
+6. Click "Load unpacked" and select the `dist/` folder
+7. After code changes, click the reload icon on the extension card
 
 ## Testing
 
-Test your changes in Chrome before submitting:
+Run the test suite before submitting:
 
-- Test with different domains
-- Test with various cookie settings
-- Verify the UI works as expected
+```bash
+npm test          # run all tests (213 tests across 6 files)
+npm run test:watch # watch mode for development
+npm run build     # verify production build succeeds
+```
+
+Manual testing checklist:
+- Test with different domains (HTTP, HTTPS, localhost)
+- Test cross-domain cookie operations (e.g., modify cookies from an iframe domain)
+- Test SameSite/Secure/HttpOnly attribute changes
+- Test cookie groups enable/disable
+- Verify the UI works as expected and has no CSP violations
 
 ## Code Style
 
 - Use consistent indentation (2 spaces)
 - Follow JavaScript best practices
 - Use clear, descriptive variable and function names
-- Add comments for complex logic
+- No inline `style=` attributes in JS (CSP requires `style-src 'self'`)
+- Add comments for complex logic only — avoid obvious comments

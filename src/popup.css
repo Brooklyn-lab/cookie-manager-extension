@@ -108,6 +108,71 @@ button:hover {
   padding: 10px;
 }
 
+/* Form row for inline fields */
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.form-group-inline {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.form-group-inline select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  background-color: white;
+}
+
+.form-group-inline.checkbox-group {
+  flex: 0 0 auto;
+  padding-bottom: 2px;
+}
+
+.form-group-inline.checkbox-group label {
+  font-size: 13px;
+}
+
+/* SameSite badge in cookie details */
+.samesite-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.samesite-badge.samesite-none {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+.samesite-badge.samesite-lax {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.samesite-badge.samesite-strict {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.samesite-badge.samesite-unspecified {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #d6d8db;
+}
+
 /* Accordion styles */
 .accordion {
   margin-bottom: 15px;
@@ -117,8 +182,8 @@ button:hover {
   contain: layout;
 }
 
-/* Remove margin from the saved cookies accordion (last one) */
-.saved-cookies-accordion {
+/* Remove margin from last accordion before bottom controls */
+.groups-accordion {
   margin-bottom: 0;
 }
 
@@ -511,6 +576,27 @@ button:hover {
 /* Remove margin from form-group in search section only */
 .cookie-search-section .form-group {
   margin-bottom: 0;
+}
+
+/* Domain selector row */
+.domain-selector-row {
+  margin-bottom: 8px;
+}
+
+.domain-selector-row input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  background-color: white;
+  color: #333;
+  box-sizing: border-box;
+}
+
+.domain-selector-row input::placeholder {
+  color: #999;
 }
 
 .search-input-container {
@@ -1369,6 +1455,50 @@ button:hover {
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
+.edit-modal-body select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.edit-modal-body .form-row {
+  margin-top: 10px;
+}
+
+.edit-modal-body .form-group-inline {
+  margin-bottom: 0;
+}
+
+.edit-modal-body .checkbox-group {
+  padding-bottom: 2px;
+}
+
+.sensitive-domain-modal {
+  max-width: 340px;
+}
+
+.sensitive-domain-header {
+  background: #fff3cd;
+  border-bottom: 1px solid #ffc107;
+}
+
+.sensitive-domain-header h3 {
+  color: #856404;
+}
+
+.sensitive-domain-text {
+  margin: 0 0 10px;
+  color: #333;
+}
+
+.sensitive-domain-subtext {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+}
+
 .edit-modal-footer {
   padding: 15px 20px;
   border-top: 1px solid #eee;
@@ -1403,5 +1533,206 @@ button:hover {
 
 .edit-cancel-btn:hover {
   background-color: #545b62;
+}
+
+/* Cookie Groups */
+.groups-content {
+  padding: 5px 0;
+}
+
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.no-groups-message {
+  color: #999;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.group-color-badge {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.group-name {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-cookie-count {
+  color: #999;
+  font-size: 11px;
+  margin-right: auto;
+}
+
+.group-buttons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.group-enable-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.group-enable-btn:hover {
+  background: #218838;
+}
+
+.group-disable-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.group-disable-btn:hover {
+  background: #c82333;
+}
+
+.group-delete-btn {
+  background: none;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.group-delete-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.add-group-section {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.add-group-section input[type="text"] {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.add-group-section input[type="color"] {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-group-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-group-btn:hover {
+  background: #218838;
+}
+
+/* Cookie group badge on cookie items */
+.cookie-group-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: white;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px dashed #ccc;
+  transition: all 0.2s;
+}
+
+.cookie-group-badge:hover {
+  opacity: 0.8;
+  border-color: #999;
+}
+
+/* Group assign dropdown */
+.group-assign-dropdown {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 140px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.group-assign-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.group-assign-item:hover {
+  background: #f0f0f0;
+}
+
+.group-assign-item.active {
+  background: #e8f0fe;
+  font-weight: 600;
+}
+
+.group-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 

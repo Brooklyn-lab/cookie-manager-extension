@@ -8,17 +8,19 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 
 - **Add new cookies** with customizable name, value, domain, path and expiration settings
 - **Edit cookie names and values** with modal dialog interface
+- **SameSite, Secure, HttpOnly** attributes — full control over cookie security flags
+- **Cross-domain operations** — set/remove cookies for any domain, not just the current tab
+- **Cookie groups** — organize cookies into groups and enable/disable them in batch
 - **Global cookies** that work across all domains
 - **Save cookies** for future reuse across sessions
 - **Copy cookie names and values** with one click (click on cookie name/value text)
-- **Drag & drop reordering** - intuitive cookie organization by dragging items
-- **Smart toggle buttons** that automatically sync with browser state
-- **Domain validation** - buttons show "Domain Mismatch" when cookies can't be applied to current site
-- **Auto-sync on startup** - button states automatically update when extension opens
-- **Real-time updates** - buttons sync when cookies are deleted from other parts of the extension
-- **Auto-focus on Name field** - cursor automatically positioned for quick input when form opens
+- **Drag & drop reordering** — intuitive cookie organization by dragging items
+- **Smart toggle buttons** that automatically sync with browser state (including cross-domain cookies)
+- **Auto-sync on startup** — button states automatically update when extension opens
+- **Real-time updates** — buttons sync when cookies are deleted from other parts of the extension
+- **Auto-focus on Name field** — cursor automatically positioned for quick input when form opens
 - **Delete cookies** from your saved list
-- **Import/Export functionality** - backup and restore your saved cookies
+- **Import/Export functionality** — backup and restore your saved cookies
 
 ### 🎯 Drag & Drop Features
 
@@ -63,14 +65,15 @@ A powerful Chrome extension for managing cookies and site data with automatic sy
 
 ### 🔍 Advanced Search
 
-- **Search cookies by name** on current domain
-- **Input validation** - visual feedback for empty search attempts
+- **Cross-domain search** — search cookies on any domain, not just the current tab
+- **Domain selector** — pick from domains loaded on the page (iframes included) via `webNavigation`
+- **Edit all cookie attributes** from search results (name, value, domain, path, SameSite, Secure, HttpOnly)
+- **Input validation** — visual feedback for empty search attempts
 - **Automatic search** across domain variants (.domain.com, domain.com)
 - **Interactive results** with copyable values
 - **Timeout protection** against search hanging
 - **Clean error handling** with toast notifications
-- **Auto-clearing** of error messages
-- **Auto-close accordions** - saved cookies accordion closes when searching
+- **Auto-close accordions** — saved cookies accordion closes when searching
 
 ### 💬 Enhanced User Experience
 
@@ -117,7 +120,7 @@ Run `npm run dev` to start watching for changes. Vite will rebuild automatically
 4. **Smart buttons**:
    - Blue "Add" button (outline) = cookie missing, can be added
    - Red "Remove" button (outline) = cookie exists, can be removed
-   - Gray "Domain Mismatch" button = cookie can't be applied to current domain
+   - Cross-domain cookies show Add/Remove based on their own domain state
 
 ### Import/Export Cookies
 
@@ -188,13 +191,14 @@ Run `npm run dev` to start watching for changes. Vite will rebuild automatically
 
 ### APIs Used
 
-- **Chrome Storage API** - saving cookie presets, drag & drop order, and import/export data
-- **Chrome Cookies API** - managing cookies on websites with optimized batch operations
-- **Chrome Tabs API** - identifying current site
-- **Chrome BrowsingData API** - clearing site data
-- **Chrome Scripting API** - script injection for storage clearing
-- **HTML5 Drag and Drop API** - cookie reordering functionality
-- **File API** - reading and writing JSON files for import/export
+- **Chrome Storage API** — saving cookie presets, groups, drag & drop order, and import/export data
+- **Chrome Cookies API** — managing cookies on any domain with optimized batch operations
+- **Chrome Tabs API** — identifying current site
+- **Chrome WebNavigation API** — discovering iframe domains for cross-domain search
+- **Chrome BrowsingData API** — clearing site data
+- **Chrome Scripting API** — script injection for storage clearing
+- **HTML5 Drag and Drop API** — cookie reordering functionality
+- **File API** — reading and writing JSON files for import/export
 
 ### Architecture
 
@@ -208,21 +212,24 @@ Run `npm run dev` to start watching for changes. Vite will rebuild automatically
 ### Security
 
 - **Local storage** - all data stored only in browser
-- **Sanitized HTML** - XSS protection through proper escaping
-- **User permissions** - using only necessary permissions
-- **Domain validation** - prevents inappropriate cookie application
-- **File validation** - comprehensive checks for imported data integrity
+- **Sanitized HTML** — XSS protection through proper escaping
+- **CSP compliance** — no inline styles, strict `style-src 'self'`
+- **User permissions** — using only necessary permissions
+- **SameSite validation** — enforces Secure flag when SameSite=None
+- **File validation** — comprehensive checks for imported data integrity
 
 ## Permissions Required
 
 The extension requires the following permissions:
 
-- `cookies` - for reading and managing cookies
-- `storage` - for saving settings, cookie order, and import/export data
-- `activeTab` - for working with current tab
-- `scripting` - for clearing script injection
-- `browsingData` - for complete site data clearing
-- `host_permissions` - for access to all sites
+- `cookies` — reading and managing cookies on any domain
+- `storage` — saving settings, groups, cookie order, and import/export data
+- `tabs` — identifying current tab
+- `activeTab` — working with current tab
+- `scripting` — script injection for storage clearing
+- `browsingData` — complete site data clearing
+- `webNavigation` — discovering iframe domains for cross-domain search
+- `host_permissions: <all_urls>` — cross-domain cookie operations
 
 ## Development
 
@@ -231,32 +238,38 @@ The extension requires the following permissions:
 ```
 BrowserExtension/
 ├── src/
-│   ├── popup.html       # Interface HTML
-│   ├── popup.js         # Main logic (ES module)
-│   ├── popup.css        # Interface styles
-│   ├── utils.js         # Validation, encryption helpers
-│   └── background.js    # Service worker for auto-apply
+│   ├── popup.html          # Interface HTML
+│   ├── popup.js            # Main logic (ES module entry point)
+│   ├── popup.css           # Interface styles
+│   ├── utils.js            # Validation, encryption, UI helpers
+│   ├── background.js       # Service worker for auto-apply
+│   └── modules/
+│       ├── cookies.js      # Cookie CRUD, toggle, sync, edit
+│       ├── search.js       # Cross-domain search & edit
+│       ├── groups.js       # Cookie groups management
+│       ├── site-cookies.js # Site cookies display
+│       ├── import-export.js# Import/export functionality
+│       ├── drag-drop.js    # Drag & drop reordering
+│       ├── ui.js           # UI helpers (toast, scroll, format)
+│       └── state.js        # Shared state management
+├── tests/                  # Vitest unit tests (213 tests)
 ├── public/
-│   ├── manifest.json    # Extension configuration
-│   └── icon*.png        # Extension icons
-├── dist/                # Built extension (load this in Chrome)
-├── vite.config.js       # Vite build configuration
-├── package.json         # Dependencies and scripts
-└── README.md            # Documentation
+│   ├── manifest.json       # Extension configuration (MV3)
+│   └── icon*.png           # Extension icons
+├── dist/                   # Built extension (load this in Chrome)
+├── vite.config.js          # Vite build configuration
+└── package.json            # Dependencies and scripts
 ```
 
 ### Key Functions
 
-- `autoSyncCookieStates()` - Automatically syncs all saved cookie button states
-- `canApplyCookieToCurrentDomain()` - Validates cookie-domain compatibility
-- `updateToggleButtonState()` - Updates individual button appearance and state
-- `checkCookieInMap()` - Efficient cookie existence checking using Map lookup
-- `initializeDragAndDrop()` - Sets up drag & drop functionality with event handlers
-- `updateCookieOrder()` - Saves new cookie order to storage after drag & drop
-- `handleDragStart/Over/Enter/Leave/Drop/End()` - Complete drag & drop event handling
-- `exportSavedCookies()` - Creates and downloads JSON backup of saved cookies
-- `importSavedCookies()` - Reads and validates JSON file, merges new cookies
-- `updateDraggableState()` - Controls drag functionality based on cookie count
+- `autoSyncCookieStates()` — syncs saved cookie button states (same-domain + cross-domain)
+- `checkCrossDomainCookieState()` — checks cookie existence on its own domain
+- `checkCookieInMap()` — efficient O(1) cookie existence check using Map lookup
+- `enableGroupCookies()` / `disableGroupCookies()` — batch group operations
+- `searchCookieOnCurrentSite()` — search with optional cross-domain target
+- `exportSavedCookies()` / `importSavedCookies()` — JSON backup and restore
+- `initializeDragAndDrop()` — drag & drop with persistent order
 
 ### Debugging
 

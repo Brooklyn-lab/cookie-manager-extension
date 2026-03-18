@@ -58,6 +58,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const cookieDomainInput = document.getElementById("cookieDomain");
   const cookiePathInput = document.getElementById("cookiePath");
   const cookieExpirationInput = document.getElementById("cookieExpiration");
+  const cookieSameSiteSelect = document.getElementById("cookieSameSite");
+  const cookieSecureCheckbox = document.getElementById("cookieSecure");
+  const cookieHttpOnlyCheckbox = document.getElementById("cookieHttpOnly");
   const isGlobalCookieCheckbox = document.getElementById("isGlobalCookie");
   const addCookieBtn = document.getElementById("addCookieBtn");
   const accordion = document.querySelector(".accordion");
@@ -69,6 +72,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const clearAllDataBtn = document.getElementById("clearAllDataBtn");
   const searchCookieBtn = document.getElementById("searchCookieBtn");
   const cookieSearchInput = document.getElementById("cookieSearchInput");
+  const searchDomainInput = document.getElementById("searchDomainInput");
+  const domainSuggestions = document.getElementById("domainSuggestions");
   const exportCookiesBtn = document.getElementById("exportCookiesBtn");
   const importCookiesBtn = document.getElementById("importCookiesBtn");
   const importFileInput = document.getElementById("importFileInput");
@@ -104,6 +109,9 @@ document.addEventListener("DOMContentLoaded", function () {
       cookieDomainInput.value = "";
       cookiePathInput.value = "/";
       cookieExpirationInput.value = "30";
+      cookieSameSiteSelect.value = "unspecified";
+      cookieSecureCheckbox.checked = false;
+      cookieHttpOnlyCheckbox.checked = false;
       isGlobalCookieCheckbox.checked = true;
       cookieDomainInput.disabled = true;
       cookieDomainInput.placeholder = "Global cookie (any domain)";
@@ -180,6 +188,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // ── SameSite change — auto-check Secure for None ──
+  cookieSameSiteSelect.addEventListener("change", function () {
+    if (this.value === "no_restriction") {
+      cookieSecureCheckbox.checked = true;
+    }
+  });
+
   // ── Add cookie button ──
   addCookieBtn.addEventListener("click", function () {
     clearFormValidation();
@@ -231,7 +246,16 @@ document.addEventListener("DOMContentLoaded", function () {
       domain = "." + domain;
     }
 
-    saveCookie(name, value, domain, path, expirationValidation.value, isGlobal);
+    const sameSite = cookieSameSiteSelect.value;
+    const secure = cookieSecureCheckbox.checked;
+    const httpOnly = cookieHttpOnlyCheckbox.checked;
+
+    if (sameSite === "no_restriction" && !secure) {
+      showFormValidation("SameSite=None requires Secure to be enabled", "error", cookieSecureCheckbox);
+      return;
+    }
+
+    saveCookie(name, value, domain, path, expirationValidation.value, isGlobal, { sameSite, secure, httpOnly });
   });
 
   // ── Form field input validation clearing ──
@@ -247,10 +271,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (cookieName) {
       const searchResultEl = document.getElementById("search-result");
       const hasVisibleResults = searchResultEl.innerHTML.trim() !== "";
+      const typedDomain = searchDomainInput.value.trim() || null;
 
       if (cookieName === state.lastSearchTerm && hasVisibleResults) return;
 
-      if (cookieName === state.lastNotFoundTerm) {
+      if (cookieName === state.lastNotFoundTerm && !typedDomain) {
         showToast(
           `Cookies containing "${breakLongString(cookieName)}" not found on current site or related domains`,
           "error"
@@ -260,7 +285,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       cookieSearchInput.classList.remove("search-input-error");
       state.lastSearchTerm = cookieName;
-      searchCookieOnCurrentSite(cookieName);
+      searchCookieOnCurrentSite(cookieName, typedDomain);
     } else {
       cookieSearchInput.classList.add("search-input-error");
       cookieSearchInput.focus();
@@ -371,13 +396,19 @@ document.addEventListener("DOMContentLoaded", function () {
     clearSearchResult();
     closeAllAccordions();
     updateCurrentDomain();
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      if (!tabs[0]) { showStatus("No active tab found", "error"); return; }
-      try {
-        const urlObj = new URL(tabs[0].url);
-        showSiteCookiesInfo(urlObj.hostname);
-      } catch (e) { showStatus(`Error: ${e.message}`, "error"); }
-    });
+
+    const typedDomain = searchDomainInput.value.trim();
+    if (typedDomain) {
+      showSiteCookiesInfo(typedDomain);
+    } else {
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (!tabs[0]) { showStatus("No active tab found", "error"); return; }
+        try {
+          const urlObj = new URL(tabs[0].url);
+          showSiteCookiesInfo(urlObj.hostname);
+        } catch (e) { showStatus(`Error: ${e.message}`, "error"); }
+      });
+    }
   });
 
   // ── Clear cookies button ──
@@ -490,6 +521,79 @@ document.addEventListener("DOMContentLoaded", function () {
       event.stopPropagation();
       showGroupAssignMenu(badge.dataset.cookieId, badge);
     }
+  });
+
+  // ── Populate domain suggestions ──
+  function populateDomainSuggestions() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0]) return;
+      const currentUrl = tabs[0].url || "";
+      const currentDomain = currentUrl ? new URL(currentUrl).hostname : "";
+      const tabId = tabs[0].id;
+
+      searchDomainInput.placeholder = currentDomain
+        ? `Current site (${currentDomain})`
+        : "Current site";
+
+      chrome.webNavigation.getAllFrames({ tabId }, function (frames) {
+        const frameDomains = new Set();
+        if (frames) {
+          frames.forEach(function (frame) {
+            try {
+              const hostname = new URL(frame.url).hostname;
+              if (hostname) frameDomains.add(hostname);
+            } catch (_) { /* ignore about:blank, chrome-extension:// etc */ }
+          });
+        }
+
+        const resultDomains = new Set(frameDomains);
+        const cookieUrls = Array.from(frameDomains).map(
+          (d) => `https://${d}/`
+        );
+
+        let pending = cookieUrls.length;
+
+        if (pending === 0) {
+          renderDomainOptions(resultDomains, currentDomain);
+          return;
+        }
+
+        cookieUrls.forEach(function (url) {
+          chrome.cookies.getAll({ url }, function (cookies) {
+            if (cookies) {
+              cookies.forEach(function (c) {
+                resultDomains.add(c.domain.replace(/^\./, ""));
+              });
+            }
+            pending--;
+            if (pending === 0) {
+              renderDomainOptions(resultDomains, currentDomain);
+            }
+          });
+        });
+      });
+    });
+  }
+
+  function renderDomainOptions(domains, currentDomain) {
+    domainSuggestions.innerHTML = "";
+    Array.from(domains).sort().forEach(function (d) {
+      if (d === currentDomain) return;
+      const opt = document.createElement("option");
+      opt.value = d;
+      domainSuggestions.appendChild(opt);
+    });
+  }
+
+  populateDomainSuggestions();
+
+  searchDomainInput.addEventListener("input", function () {
+    state.lastSearchQuery = null;
+    state.lastSearchDomain = null;
+    state.lastSearchResult = null;
+    state.lastSearchTerm = null;
+    state.lastNotFoundTerm = null;
+    clearSearchResult();
   });
 
   // ── Initialization ──

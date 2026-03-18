@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Cookie Manager",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Advanced cookie manager with editing, drag & drop reordering, import/export, auto-sync, domain validation, and smart search",
   "action": {
     "default_popup": "popup.html",
@@ -20,7 +20,8 @@
     "activeTab",
     "storage",
     "scripting",
-    "browsingData"
+    "browsingData",
+    "webNavigation"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {

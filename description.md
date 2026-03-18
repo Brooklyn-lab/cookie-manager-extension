@@ -5,26 +5,25 @@ The main reason this extension was created! Build your personal library of reusa
 
 ✨ SAVED COOKIES - YOUR COOKIE ARSENAL:
 • Save cookies once, use everywhere and forever
-• One-click toggle: Add/Remove any saved cookie on current site
+• Full cookie control: SameSite, Secure, HttpOnly attributes
+• Cross-domain operations: Set/remove cookies for any domain from any tab
+• Cookie groups: Organize cookies into groups and enable/disable in batch
+• One-click toggle: Add/Remove any saved cookie — even cross-domain
 • Auto-sync verification: Button states automatically update with real browser state
-• Smart domain validation: Instantly see which cookies work on current site
 • Drag & Drop reordering: Organize your cookie library with intuitive drag interface
 • Import/Export functionality: Backup and restore your entire cookie collection
-• Auto-focus on Name field for lightning-fast cookie creation
-• Instant verification: Check if your cookie exists on the current website
 • Global cookies work on any domain automatically
-• Quick deletion with professional trash icon
 • Copy names and values with one click
 • Perfect for developers, testers, and power users
 
 🚀 WHY SAVED COOKIES CHANGE EVERYTHING:
+• Fix SameSite issues in iframes — set SameSite=None; Secure for cross-site cookies
 • Test different user states across multiple sites instantly
 • Switch between development/staging/production cookies effortlessly
 • Maintain consistent authentication tokens across environments
-• No more manually typing complex cookie values
-• Build reusable cookie sets for different testing scenarios
+• Build reusable cookie groups for different testing scenarios
 • Share cookie configurations between team members via export
-• Never lose your cookie library with automatic backup capabilities
+• Cross-domain search finds cookies from iframe domains (e.g., Builder.io)
 
 💼 REAL-WORLD USE CASES:
 • QA Engineers: Test with different user roles and permissions
@@ -52,20 +51,20 @@ The main reason this extension was created! Build your personal library of reusa
 • Backup before major changes or testing sessions
 • Comprehensive error handling with toast notifications
 
-🔍 ADVANCED SEARCH WITH SMART VALIDATION:
-• Search cookies by name with partial matching
-• Input validation with visual feedback for empty searches
-• Red border highlight with shake animation for invalid input
-• Auto-focus error state clearing after 3 seconds or typing
-• Auto-closing accordions for streamlined search workflow
+🔍 CROSS-DOMAIN SEARCH:
+• Search cookies on any domain — not just the current tab
+• Domain selector populated from page frames (iframes included)
+• Edit all cookie attributes from search results (SameSite, Secure, HttpOnly, domain, path)
+• Partial name matching with domain variant checking
+• Input validation with visual feedback
 • Toast notifications for clean error handling
 • Timeout protection against hanging searches
 
 🛡️ INTELLIGENT AUTO-SYNC FEATURES:
 • Auto-sync on startup: Button states automatically update when extension opens
+• Cross-domain sync: Checks cookie state on the cookie's own domain
 • Real-time updates: Buttons sync when cookies deleted from anywhere
-• Domain validation: Instantly see "Domain Mismatch" for incompatible cookies
-• Optimized performance: Single API call instead of multiple checks
+• Optimized performance: Batch API calls for same-domain, individual checks for cross-domain
 • Map-based O(1) lookup for instant cookie existence verification
 
 🔧 ADDITIONAL POWERFUL FEATURES:

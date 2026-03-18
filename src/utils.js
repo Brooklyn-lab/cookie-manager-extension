@@ -164,16 +164,16 @@ export function showSensitiveDomainWarning(domain, action) {
     overlay.className = "edit-modal";
 
     overlay.innerHTML = `
-      <div class="edit-modal-content" style="max-width: 340px;">
-        <div class="edit-modal-header" style="background: #fff3cd; border-bottom: 1px solid #ffc107;">
-          <h3 style="color: #856404;">⚠ Sensitive Domain</h3>
+      <div class="edit-modal-content sensitive-domain-modal">
+        <div class="edit-modal-header sensitive-domain-header">
+          <h3>⚠ Sensitive Domain</h3>
           <button class="edit-modal-close">&times;</button>
         </div>
         <div class="edit-modal-body">
-          <p style="margin: 0 0 10px; color: #333;">
+          <p class="sensitive-domain-text">
             <strong>${domain}</strong> looks like a sensitive domain.
           </p>
-          <p style="margin: 0; color: #666; font-size: 13px;">
+          <p class="sensitive-domain-subtext">
             Modifying cookies on this domain may affect authentication or security.
             Are you sure you want to <strong>${action}</strong> this cookie?
           </p>

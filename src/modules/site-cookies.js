@@ -440,11 +440,16 @@ export function showSiteCookiesInfo(domain) {
         }
         cookieDetailsDiv.appendChild(cookieExpires);
 
+        const sameSiteVal = cookie.sameSite || "unspecified";
+        const sameSiteLabel = { no_restriction: "None", lax: "Lax", strict: "Strict", unspecified: "Unspecified" }[sameSiteVal] || sameSiteVal;
+        const sameSiteCssClass = { no_restriction: "samesite-none", lax: "samesite-lax", strict: "samesite-strict", unspecified: "samesite-unspecified" }[sameSiteVal] || "samesite-unspecified";
+
         const cookieFlags = document.createElement("div");
         cookieFlags.className = "site-cookie-flags";
         cookieFlags.innerHTML = `<strong>Secure:</strong> ${
           cookie.secure ? "Yes" : "No"
-        } | <strong>HttpOnly:</strong> ${cookie.httpOnly ? "Yes" : "No"}`;
+        } | <strong>HttpOnly:</strong> ${cookie.httpOnly ? "Yes" : "No"
+        } | <strong>SameSite:</strong> <span class="samesite-badge ${sameSiteCssClass}">${sameSiteLabel}</span>`;
         cookieDetailsDiv.appendChild(cookieFlags);
 
         cookieElement.appendChild(cookieDetailsDiv);

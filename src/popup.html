@@ -13,10 +13,14 @@
     <!-- Cookie search section -->
     <div class="cookie-search-section">
       <div class="form-group">
-        <label for="cookieSearchInput">Search cookie on current site:</label>
+        <label for="cookieSearchInput">Search cookie:</label>
+        <div class="domain-selector-row">
+          <input type="text" id="searchDomainInput" list="domainSuggestions" placeholder="Current site" title="Type domain or pick from list" autocomplete="off">
+          <datalist id="domainSuggestions"></datalist>
+        </div>
         <div class="search-input-container">
           <input type="text" id="cookieSearchInput" placeholder="Enter cookie name to search...">
-          <button id="searchCookieBtn" class="search-btn" title="Search for this cookie on current site">Search</button>
+          <button id="searchCookieBtn" class="search-btn" title="Search for this cookie">Search</button>
         </div>
       </div>
       <div id="search-result" class="search-result"></div>
@@ -54,6 +58,25 @@
           <div class="form-group">
             <label for="cookieExpiration">Expiration (days):</label>
             <input type="number" id="cookieExpiration" value="30" min="0">
+          </div>
+          <div class="form-row">
+            <div class="form-group form-group-inline">
+              <label for="cookieSameSite">SameSite:</label>
+              <select id="cookieSameSite">
+                <option value="unspecified">Unspecified</option>
+                <option value="lax">Lax</option>
+                <option value="strict">Strict</option>
+                <option value="no_restriction">None</option>
+              </select>
+            </div>
+            <div class="form-group form-group-inline checkbox-group">
+              <input type="checkbox" id="cookieSecure">
+              <label for="cookieSecure">Secure</label>
+            </div>
+            <div class="form-group form-group-inline checkbox-group">
+              <input type="checkbox" id="cookieHttpOnly">
+              <label for="cookieHttpOnly">HttpOnly</label>
+            </div>
           </div>
           <!-- Add validation message area for form -->
           <div id="form-validation-message" class="validation-message"></div>

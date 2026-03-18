@@ -180,15 +180,20 @@ export function enableGroupCookies(groupId) {
       const expirationDate =
         Date.now() / 1000 + (decrypted.expirationDays || 30) * 86400;
 
+      const sameSite = decrypted.sameSite || "unspecified";
+      const isSecure = decrypted.secure || sameSite === "no_restriction" || false;
+      const finalUrl = isSecure ? cookieUrl.replace(/^http:/, "https:") : cookieUrl;
+
       chrome.cookies.set(
         {
-          url: cookieUrl,
+          url: finalUrl,
           name: decrypted.name,
           value: decrypted.value,
           path: path,
           domain: domain.startsWith(".") ? domain : null,
-          secure: false,
-          httpOnly: false,
+          secure: isSecure,
+          httpOnly: decrypted.httpOnly || false,
+          sameSite: sameSite,
           expirationDate: expirationDate,
         },
         function (result) {

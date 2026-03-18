@@ -108,6 +108,71 @@ button:hover {
   padding: 10px;
 }
 
+/* Form row for inline fields */
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.form-group-inline {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.form-group-inline select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  background-color: white;
+}
+
+.form-group-inline.checkbox-group {
+  flex: 0 0 auto;
+  padding-bottom: 2px;
+}
+
+.form-group-inline.checkbox-group label {
+  font-size: 13px;
+}
+
+/* SameSite badge in cookie details */
+.samesite-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.samesite-badge.samesite-none {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+.samesite-badge.samesite-lax {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.samesite-badge.samesite-strict {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.samesite-badge.samesite-unspecified {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #d6d8db;
+}
+
 /* Accordion styles */
 .accordion {
   margin-bottom: 15px;
@@ -511,6 +576,27 @@ button:hover {
 /* Remove margin from form-group in search section only */
 .cookie-search-section .form-group {
   margin-bottom: 0;
+}
+
+/* Domain selector row */
+.domain-selector-row {
+  margin-bottom: 8px;
+}
+
+.domain-selector-row input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  background-color: white;
+  color: #333;
+  box-sizing: border-box;
+}
+
+.domain-selector-row input::placeholder {
+  color: #999;
 }
 
 .search-input-container {
@@ -1367,6 +1453,50 @@ button:hover {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.edit-modal-body select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.edit-modal-body .form-row {
+  margin-top: 10px;
+}
+
+.edit-modal-body .form-group-inline {
+  margin-bottom: 0;
+}
+
+.edit-modal-body .checkbox-group {
+  padding-bottom: 2px;
+}
+
+.sensitive-domain-modal {
+  max-width: 340px;
+}
+
+.sensitive-domain-header {
+  background: #fff3cd;
+  border-bottom: 1px solid #ffc107;
+}
+
+.sensitive-domain-header h3 {
+  color: #856404;
+}
+
+.sensitive-domain-text {
+  margin: 0 0 10px;
+  color: #333;
+}
+
+.sensitive-domain-subtext {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
 }
 
 .edit-modal-footer {

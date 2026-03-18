@@ -21,6 +21,7 @@ import {
   performNewSearch,
   editSearchedCookie,
   updateSearchResultCookieValue,
+  saveSearchedCookie,
 } from "../src/modules/search.js";
 import { state } from "../src/modules/state.js";
 
@@ -450,5 +451,132 @@ describe("updateSearchResultCookieValue", () => {
     const valueSpan = el.querySelector(".clickable-value");
     expect(valueSpan.getAttribute("data-full-value")).toBe("newVal");
     expect(valueSpan.textContent).toContain("newVal");
+  });
+});
+
+describe("saveSearchedCookie", () => {
+  beforeEach(() => {
+    setupDOM();
+    document.body.innerHTML += `
+      <div id="savedCookiesList"></div>
+      <div class="saved-cookies-accordion">
+        <div class="accordion-content">
+          <div class="saved-cookies-content"></div>
+        </div>
+      </div>
+      <div class="accordion"><div class="add-cookie-form"></div></div>
+    `;
+  });
+
+  it("saves a new cookie to chrome.storage", () => {
+    saveSearchedCookie("session", "example.com", "/", "abc123");
+
+    expect(chrome.storage.local.get).toHaveBeenCalledWith(
+      ["savedCookies"],
+      expect.any(Function)
+    );
+    expect(chrome.storage.local.set).toHaveBeenCalled();
+
+    const savedArg = chrome.storage.local.set.mock.calls[0][0];
+    expect(savedArg.savedCookies).toHaveLength(1);
+    expect(savedArg.savedCookies[0].name).toBe("session");
+    expect(savedArg.savedCookies[0].domain).toBe("example.com");
+    expect(savedArg.savedCookies[0].path).toBe("/");
+    expect(savedArg.savedCookies[0].isEncrypted).toBe(true);
+    expect(savedArg.savedCookies[0].isGlobal).toBe(false);
+  });
+
+  it("encrypts value before saving", () => {
+    saveSearchedCookie("token", "example.com", "/", "secret");
+
+    const savedArg = chrome.storage.local.set.mock.calls[0][0];
+    expect(savedArg.savedCookies[0].value).toBe(btoa("secret"));
+    expect(savedArg.savedCookies[0].isEncrypted).toBe(true);
+  });
+
+  it("sets default expirationDays to 30", () => {
+    saveSearchedCookie("token", "example.com", "/", "val");
+
+    const savedArg = chrome.storage.local.set.mock.calls[0][0];
+    expect(savedArg.savedCookies[0].expirationDays).toBe(30);
+  });
+
+  it("skips saving if cookie with same name and domain already exists", () => {
+    const existing = {
+      id: "old",
+      name: "session",
+      value: btoa("old-val"),
+      domain: "example.com",
+      path: "/",
+      isEncrypted: true,
+      isGlobal: false,
+    };
+    chrome.storage.local.set({ savedCookies: [existing] }, () => {});
+    chrome.storage.local.set.mockClear();
+
+    saveSearchedCookie("session", "example.com", "/", "new-val");
+
+    expect(chrome.storage.local.set).not.toHaveBeenCalled();
+  });
+
+  it("allows saving cookie with same name but different domain", () => {
+    const existing = {
+      id: "old",
+      name: "session",
+      value: btoa("val"),
+      domain: "other.com",
+      path: "/",
+      isEncrypted: true,
+      isGlobal: false,
+    };
+    chrome.storage.local.set({ savedCookies: [existing] }, () => {});
+    chrome.storage.local.set.mockClear();
+
+    saveSearchedCookie("session", "example.com", "/", "val");
+
+    expect(chrome.storage.local.set).toHaveBeenCalled();
+    const savedArg = chrome.storage.local.set.mock.calls[0][0];
+    expect(savedArg.savedCookies).toHaveLength(2);
+  });
+
+  it("generates unique id for saved cookie", () => {
+    saveSearchedCookie("a", "example.com", "/", "v1");
+
+    const savedArg = chrome.storage.local.set.mock.calls[0][0];
+    expect(savedArg.savedCookies[0].id).toBeTruthy();
+    expect(savedArg.savedCookies[0].id.length).toBeGreaterThan(5);
+  });
+
+  it("uses default path '/' when path is empty", () => {
+    saveSearchedCookie("test", "example.com", "", "val");
+
+    const savedArg = chrome.storage.local.set.mock.calls[0][0];
+    expect(savedArg.savedCookies[0].path).toBe("/");
+  });
+});
+
+describe("createSearchResultsContainer — save button", () => {
+  it("renders a save button for each cookie", () => {
+    const container = createSearchResultsContainer(SAMPLE_COOKIES, "Results");
+    const saveBtns = container.querySelectorAll(".search-cookie-save-btn");
+    expect(saveBtns).toHaveLength(2);
+  });
+
+  it("save button has correct data attributes", () => {
+    const container = createSearchResultsContainer(SAMPLE_COOKIES, "Results");
+    const saveBtn = container.querySelector(".search-cookie-save-btn");
+    expect(saveBtn.getAttribute("data-cookie-name")).toBe("session");
+    expect(saveBtn.getAttribute("data-cookie-domain")).toBe("example.com");
+    expect(saveBtn.getAttribute("data-cookie-path")).toBe("/");
+    expect(saveBtn.getAttribute("data-cookie-value")).toBe("abc123");
+  });
+
+  it("save button appears before edit button", () => {
+    const container = createSearchResultsContainer(SAMPLE_COOKIES, "Results");
+    const buttons = container.querySelector(".search-cookie-buttons");
+    const children = [...buttons.children];
+    const saveIdx = children.findIndex((el) => el.classList.contains("search-cookie-save-btn"));
+    const editIdx = children.findIndex((el) => el.classList.contains("search-cookie-edit-btn"));
+    expect(saveIdx).toBeLessThan(editIdx);
   });
 });
